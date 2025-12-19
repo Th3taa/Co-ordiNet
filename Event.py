@@ -1,10 +1,8 @@
 from datetime import date
+from utils import util_funcs as fns
 
 interhouse,interschool={},{}
 
-EventData = {}
-EventData.update(interhouse)
-EventData.update(interschool)
 
 class event():
 
@@ -16,11 +14,7 @@ class event():
         self.date = event_date
         self.grades = grades
         self,gender = gender
-        event_ID = 'abcd'
-        if event_ID not in EventData:
-            pass#add event
-        else:
-            raise EventError
+
 
 class placeholder():
 
@@ -34,7 +28,33 @@ class EventError(LookupError):
 
 
 class interhouse(event):
-    pass
+
+    def __init__(event_date:date,event_name:str,grades:set,gender:str):
+
+        super().__init__(event_date,event_name,grades,gender)
+        event_ID = fns.Event_ID_IS(41,grades,gender)
+
+        if event_ID in interhouse:
+            del self
+            raise EventError
+
+        interhouse[event_ID] = {'Date':event_date,
+                                'Name':event_name,
+                                'Grades':grades,
+                                'Gender':gender}
 
 class interschool(event):
-    pass
+
+    def __init__(event_date:date,event_name:str,grades:set,gender:str,n=fns.IS_number(interschool)):
+
+        super().__init__(event_date,event_name,grades,gender)
+        event_ID = fns.Event_ID_IS(n,grades,gender,None) # deal w dis later
+
+        if event_ID in interschool:
+            del self
+            raise EventError
+
+        interschool[event_ID] = {'Date':event_date,
+                                'Name':event_name,
+                                'Grades':grades,
+                                'Gender':gender}
