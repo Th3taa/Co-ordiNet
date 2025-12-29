@@ -10,8 +10,10 @@ CREATE TABLE IF NOT EXISTS students (
 		grade INT NOT NULL,
 		section VARCHAR(10) NOT NULL,
 		birthdate DATE NOT NULL,
-		gender ENUM('M', 'F') NOT NULL,
+		gender ENUM('G', 'B') NOT NULL,
 		email VARCHAR(100) UNIQUE NOT NULL,
+		house ENUM('Pioneers', 'Challengers', 'Explorers', 'Voyagers') NOT NULL,
+        club_id VARCHAR(100) NULL,
 		position ENUM('none', 'house_leader', 'event_coordinator', 'club_leader', 'prefect') DEFAULT 'none'
 	);
 
@@ -34,6 +36,7 @@ CREATE TABLE IF NOT EXISTS events (
 		ages_eligible VARCHAR(50),
 		gender ENUM('G', 'B', 'A') DEFAULT 'A',
 		main_event VARCHAR(200),
+		club_id VARCHAR(100) NULL,
 		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 	);
 
