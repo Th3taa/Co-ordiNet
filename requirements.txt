@@ -1,0 +1,4 @@
+Flask==3.0.0
+argon2-cffi==23.1.0
+mysql-connector-python==8.2.0
+
