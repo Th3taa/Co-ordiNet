@@ -1,21 +1,15 @@
+import datetime
+
 def Event_ID_IH(clubno:int,grades:set,gender:str):
-    """
-    Generate Event ID for Interhouse events.
-    Format: IH{CLUB_NO:2}{GRADE_RANGE_HEX}{GENDER}
     
-    Args:
-        clubno: Club number (will be padded to 2 digits)
-        grades: Set of eligible grades (will use min-max range)
-        gender: Gender restriction ('G', 'B', or 'A')
-    
-    Returns:
-        Event ID string (e.g., 'IH015-CA' for Club 1, Grades 5-12, All genders)
-    """
+    #Format: IH{CLUB_NO:2}{GRADE_RANGE_HEX}{GENDER}
+
     # Pad club number to 2 digits
     club_no_padded = f'{clubno:02d}'
     
     min_grade = min(grades)
     max_grade = max(grades)
+
     # Convert to hex and get last character (handles 1-9 as is, 10=a, 11=b, 12=c)
     min_hex = hex(min_grade)[-1].upper()
     max_hex = hex(max_grade)[-1].upper()
@@ -25,19 +19,9 @@ def Event_ID_IH(clubno:int,grades:set,gender:str):
     return event_ID
 
 def Event_ID_IS(n:int,grades:list,gender:str,main_event:str=None):
-    """
-    Generate Event ID for Interschool events.
-    Format: IS{NEXT_NO:4}{GENDER}${GRADES}{$MAIN_EVENT}
-    
-    Args:
-        n: Next event number (will be padded to 4 digits)
-        grades: List of eligible grade numbers (will be converted to hex string)
-        gender: Gender restriction ('G', 'B', or 'A')
-        main_event: Optional main event name if this is a sub-event
-    
-    Returns:
-        Event ID string (e.g., 'IS0001A$123456789ABC' for Event 1, All grades, All genders)
-    """
+
+    #Format: IS{NEXT_NO:4}{GENDER}${GRADES}{$MAIN_EVENT}
+
     # Pad event number to 4 digits
     event_no_padded = f'{n:04d}'
     
@@ -52,3 +36,28 @@ def Event_ID_IS(n:int,grades:list,gender:str,main_event:str=None):
         event_ID += f'${main_event}'
 
     return event_ID
+
+
+def test(message: str = "-------"):
+
+    timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    with open('test_log.txt', 'a') as f:
+        f.write(f'[{timestamp}] {message}\n')
+
+def DB_log(message: str = "-------"):
+
+    timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    with open('db_log.txt', 'a') as f:
+        f.write(f'[{timestamp}] {message}\n')
+
+def register_log(message: str = "-------"):
+
+    timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    with open('registration_log.txt', 'a') as f:
+        f.write(f'[{timestamp}] {message}\n')
+
+def session_log(message: str = "-------"):
+
+    timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    with open('session_log.txt', 'a') as f:
+        f.write(f'[{timestamp}] {message}\n')
