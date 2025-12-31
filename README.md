@@ -95,3 +95,8 @@ Format: `IS{NEXT_NO:4}{GENDER}${GRADES}{$MAIN_EVENT}`
 
 ## License
 This project is for educational purposes.
+
+## Contributors
+-Dasmat Ajmani (Dasmax264)
+-Ira Agarwal (idktbhyay)
+-Swapnil Basu (Th3taa, bruhdrone)
