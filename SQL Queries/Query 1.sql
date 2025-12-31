@@ -36,6 +36,8 @@ CREATE TABLE IF NOT EXISTS events (
 		ages_eligible VARCHAR(50),
 		gender ENUM('G', 'B', 'A') DEFAULT 'A',
 		main_event VARCHAR(200),
+		last_registration_date DATE NOT NULL,
+		event_date DATE NOT NULL,
 		club_id VARCHAR(100) NULL,
 		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 	);
