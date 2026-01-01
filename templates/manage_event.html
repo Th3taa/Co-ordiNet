@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Event - Student Events{% endblock %}
+
+{% block content %}
+<div class="main-container">
+    <h2 class="mb-4">
+        <i class="bi bi-gear"></i> Manage Event: {{ event.event_name }}
+    </h2>
+    
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5>Event Details</h5>
+            <p><strong>Event ID:</strong> {{ event.event_id }}</p>
+            <p><strong>Type:</strong> {{ event.event_type.replace('_', ' ').title() }}</p>
+            {% if event.grades_eligible %}
+            <p><strong>Grades Eligible:</strong> {{ event.grades_eligible }}</p>
+            {% endif %}
+            {% if event.ages_eligible %}
+            <p><strong>Ages Eligible:</strong> {{ event.ages_eligible }}</p>
+            {% endif %}
+            <p><strong>Gender:</strong> 
+                {% if event.gender == 'G' %}Girls Only
+                {% elif event.gender == 'B' %}Boys Only
+                {% else %}All Genders{% endif %}
+            </p>
+            {% if event.main_event %}
+            <p><strong>Main Event:</strong> {{ event.main_event }}</p>
+            {% endif %}
+        </div>
+    </div>
+    
+    <h4 class="mb-3">Registered Students ({{ registered_students|length }})</h4>
+    
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5>Add Student to Event</h5>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('add_student_to_event', event_id=event.event_id) }}" id="addStudentForm">
+                <div class="mb-3">
+                    <label for="student_search" class="form-label">Search Student</label>
+                    <input type="text" class="form-control" id="student_search" 
+                           placeholder="Search by name, email, or ID..." autocomplete="off">
+                    <div id="student_results" class="list-group mt-2" style="display: none; max-height: 200px; overflow-y: auto;"></div>
+                </div>
+                <input type="hidden" id="student_id" name="student_id" required>
+                <button type="submit" class="btn btn-success btn-custom">
+                    <i class="bi bi-person-plus"></i> Add Student
+                </button>
+            </form>
+        </div>
+    </div>
+    
+    {% if registered_students %}
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Student ID</th>
+                    <th>Name</th>
+                    <th>Grade</th>
+                    <th>Section</th>
+                    <th>Email</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for student in registered_students %}
+                <tr>
+                    <td>{{ student.student_id }}</td>
+                    <td>{{ student.name }}</td>
+                    <td>{{ student.grade }}</td>
+                    <td>{{ student.section }}</td>
+                    <td>{{ student.email }}</td>
+                    <td>
+                        <form method="POST" action="{{ url_for('remove_student_from_event', event_id=event.event_id) }}" 
+                              style="display: inline;" onsubmit="return confirm('Are you sure you want to remove this student?');">
+                            <input type="hidden" name="student_id" value="{{ student.student_id }}">
+                            <button type="submit" class="btn btn-danger btn-sm">
+                                <i class="bi bi-trash"></i> Remove
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <i class="bi bi-info-circle"></i> No students registered for this event yet.
+    </div>
+    {% endif %}
+    
+    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary btn-custom mt-3">
+        <i class="bi bi-arrow-left"></i> Back to Dashboard
+    </a>
+</div>
+
+<script>
+let searchTimeout;
+const studentSearch = document.getElementById('student_search');
+const studentResults = document.getElementById('student_results');
+const studentIdInput = document.getElementById('student_id');
+
+studentSearch.addEventListener('input', function() {
+    clearTimeout(searchTimeout);
+    const query = this.value.trim();
+    
+    if (query.length < 2) {
+        studentResults.style.display = 'none';
+        return;
+    }
+    
+    searchTimeout = setTimeout(() => {
+        fetch(`{{ url_for('search_students') }}?q=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(data => {
+                studentResults.innerHTML = '';
+                if (data.length === 0) {
+                    studentResults.innerHTML = '<div class="list-group-item">No students found</div>';
+                } else {
+                    data.forEach(student => {
+                        const item = document.createElement('button');
+                        item.type = 'button';
+                        item.className = 'list-group-item list-group-item-action';
+                        item.innerHTML = `
+                            <strong>${student.name}</strong> (ID: ${student.student_id})<br>
+                            <small>Grade ${student.grade}-${student.section} | ${student.email}</small>
+                        `;
+                        item.addEventListener('click', () => {
+                            studentIdInput.value = student.student_id;
+                            studentSearch.value = `${student.name} (ID: ${student.student_id})`;
+                            studentResults.style.display = 'none';
+                        });
+                        studentResults.appendChild(item);
+                    });
+                }
+                studentResults.style.display = 'block';
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+    }, 300);
+});
+
+// Hide results when clicking outside
+document.addEventListener('click', function(event) {
+    if (!studentSearch.contains(event.target) && !studentResults.contains(event.target)) {
+        studentResults.style.display = 'none';
+    }
+});
+</script>
+{% endblock %}
+

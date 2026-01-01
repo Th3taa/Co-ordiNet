@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block title %}Create Event - Student Events{% endblock %}
+
+{% block content %}
+<div class="main-container">
+    <h2 class="mb-4">
+        <i class="bi bi-plus-circle"></i> Create New Event
+    </h2>
+    
+    <form method="POST" action="{{ url_for('create_event') }}">
+        <div class="mb-3">
+            <label for="event_name" class="form-label">Event Name</label>
+            <input type="text" class="form-control" id="event_name" name="event_name" required>
+        </div>
+        
+        <div class="mb-3">
+            <label for="event_type" class="form-label">Event Type</label>
+            <select class="form-select" id="event_type" name="event_type" required>
+                <option value="">Select event type...</option>
+                {% if session.position in ['club_leader', 'prefect'] %}
+                <option value="interhouse">Interhouse</option>
+                {% endif %}
+                {% if session.position in ['event_coordinator', 'club_leader', 'prefect'] %}
+                <option value="interschool">Interschool</option>
+                {% endif %}
+            </select>
+        </div>
+        
+        <div class="mb-3" id="club_no_group" style="display: none;">
+            <label for="club_no" class="form-label">Club Number (for Interhouse events)</label>
+            <input type="number" class="form-control" id="club_no" name="club_no" min="1">
+        </div>
+        
+        <div class="mb-3">
+            <label for="grades_eligible" class="form-label">Grades Eligible (comma-separated, e.g., 9,10,11,12 or leave empty for all)</label>
+            <input type="text" class="form-control" id="grades_eligible" name="grades_eligible" 
+                   placeholder="e.g., 9,10,11,12">
+            <small class="form-text text-muted">Leave empty if all grades are eligible</small>
+        </div>
+        
+        <div class="mb-3">
+            <label for="ages_eligible" class="form-label">Ages Eligible (optional)</label>
+            <input type="text" class="form-control" id="ages_eligible" name="ages_eligible" 
+                   placeholder="e.g., 14-18">
+        </div>
+        
+        <div class="mb-3">
+            <label for="gender" class="form-label">Gender</label>
+            <select class="form-select" id="gender" name="gender">
+                <option value="A">All Genders</option>
+                <option value="G">Girls Only</option>
+                <option value="B">Boys Only</option>
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label for="last_registration_date" class="form-label">Last Registration Date</label>
+            <input type="date" class="form-control" id="last_registration_date" name="last_registration_date" required>
+        </div>
+
+        <div class="mb-3">
+            <label for="event_date" class="form-label">Event Date</label>
+            <input type="date" class="form-control" id="event_date" name="event_date" required>
+        </div>
+        
+        <div class="mb-3" id="main_event_group">
+            <label for="main_event" class="form-label">Main Event (if this is a sub-event)</label>
+            <select class="form-select" id="main_event" name="main_event">
+                <option value="">None (standalone event)</option>
+                {% for main_event in main_events %}
+                <option value="{{ main_event }}">{{ main_event }}</option>
+                {% endfor %}
+            </select>
+            <small class="form-text text-muted">Or enter a new main event name:</small>
+            <input type="text" class="form-control mt-2" id="main_event_new" name="main_event_new" 
+                   placeholder="Enter new main event name">
+        </div>
+
+        <div class="mb-3">
+            <label for="event_summary" class="form-label">Event Summary</label>
+            <textarea class="form-control" id="event_summary" name="event_summary" rows="3"></textarea>
+        </div>
+        
+        <button type="submit" class="btn btn-primary btn-custom">
+            <i class="bi bi-check-circle"></i> Create Event
+        </button>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary btn-custom">
+            <i class="bi bi-x-circle"></i> Cancel
+        </a>
+    </form>
+</div>
+
+<script>
+document.getElementById('event_type').addEventListener('change', function() {
+    const clubNoGroup = document.getElementById('club_no_group');
+    if (this.value === 'interhouse') {
+        clubNoGroup.style.display = 'block';
+        document.getElementById('club_no').required = true;
+    } else {
+        clubNoGroup.style.display = 'none';
+        document.getElementById('club_no').required = false;
+    }
+});
+
+
+
+document.getElementById('main_event_new').addEventListener('input', function() {
+    if (this.value.trim()) {
+        document.getElementById('main_event').value = '';
+    }
+});
+
+document.getElementById('main_event').addEventListener('change', function() {
+    if (this.value) {
+        document.getElementById('main_event_new').value = '';
+    }
+});
+</script>
+{% endblock %}
+
