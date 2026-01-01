@@ -439,8 +439,64 @@ def manage_event(event_id):
     
     return render_template('manage_event.html', event=event, registered_students=registered_students)
 
+
+@app.route('/event/add_student/<event_id>', methods=['POST'])
+@login_required
+def add_student_to_event(event_id):
+    position = session.get('position', 'none')
+    student_id = request.form.get('student_id')
+    
+    connection = get_db_connection()
+    cursor = get_db_cursor(connection)
+    try:
+        cursor.execute("SELECT * FROM events WHERE event_id = %s", (event_id,))
+        event = cursor.fetchone()
+        
+        if not event:
+            flash('Event not found', 'error')
+            return redirect(url_for('dashboard'))
+        
+        can_manage = False
+        user_house = session.get('house')
+        user_club_id = session.get('club_id')
+        
+        if position == 'prefect':
+            can_manage = True
+        elif position == 'house_leader' and event['event_type'] == 'interhouse' and user_house:
+            can_manage = True
+        elif position == 'event_coordinator' and event['event_type'] == 'interschool':
+            can_manage = True
+        elif position == 'club_leader' and event['event_type'] == 'interschool' and event.get('club_id') == user_club_id:
+            can_manage = True
+
+        if not can_manage:
+            flash('You do not have permission to manage this event', 'error')
+            return redirect(url_for('dashboard'))
+        
+        if position == 'house_leader' and user_house:
+            cursor.execute("SELECT house FROM students WHERE student_id = %s", (student_id,))
+            student = cursor.fetchone()
+            if not student or student['house'] != user_house:
+                flash('You can only add students from your own house to interhouse events', 'error')
+                return redirect(url_for('manage_event', event_id=event_id))
+        
+        cursor.execute("SELECT * FROM registrations WHERE student_id = %s AND event_id = %s",
+                    (student_id, event_id))
+        if cursor.fetchone():
+            flash('Student is already registered for this event', 'info')
+            return redirect(url_for('manage_event', event_id=event_id))
+        
+        cursor.execute("INSERT INTO registrations (student_id, event_id) VALUES (%s, %s)",
+                    (student_id, event_id))
+        connection.commit()
+        flash('Student added to event successfully', 'success')
+        return redirect(url_for('manage_event', event_id=event_id))
+    finally:
+        cursor.close()
+        connection.close()
+
+
 '''
-add student to event
 remove student from event
 calendar
 search for events
@@ -448,4 +504,5 @@ event summary
 '''
 
 if __name__ == '__main__':
+
     app.run(port=5001,debug=True)
