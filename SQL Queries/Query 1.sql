@@ -38,8 +38,10 @@ CREATE TABLE IF NOT EXISTS events (
 		main_event VARCHAR(200),
 		last_registration_date DATE NOT NULL,
 		event_date DATE NOT NULL,
-		club_id VARCHAR(100) NULL,
-		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		created_by INT NOT NULL,
+		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		event_summary TEXT,
+		club_id VARCHAR(100) NULL
 	);
 
 -- Registrations table, Reg. ID(Primary Key), Student ID, Event ID, Registered time, refer Student ID and Event ID for remaining data

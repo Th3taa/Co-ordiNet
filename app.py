@@ -19,10 +19,7 @@ MYSQL_CONFIG = {
     'database': 'student_events'
 }
 
-
 ph = PasswordHasher()
-
-
 
 def get_db_connection():
     try:
@@ -31,7 +28,6 @@ def get_db_connection():
     except Error as e:
         print(f"Error connecting to MySQL: {e}")
         raise
-
 
 def get_db_cursor(connection):
     return connection.cursor(dictionary=True)
@@ -69,13 +65,11 @@ def hex_to_grades(hex_str):
 
 
 
-
 @app.route('/')
 def index():
     if 'user_id' in session:
         return redirect(url_for('dashboard'))
     return redirect(url_for('login'))
-
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -118,7 +112,6 @@ def login():
             connection.close()
 
     return render_template('login.html')
-
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -174,13 +167,11 @@ def register():
     
     return render_template('register.html')
 
-
 @app.route('/logout')
 def logout():
     session.clear()
     flash('You have been logged out', 'info')
     return redirect(url_for('login'))
-
 
 @app.route('/dashboard')
 @login_required
@@ -209,7 +200,6 @@ def dashboard():
         connection.close()
     
     return render_template('dashboard.html', events=events, registered_events=registered_events)
-
 
 @app.route('/event/register/<event_id>', methods=['POST'])
 @login_required
@@ -267,7 +257,6 @@ def register_event(event_id):
         cursor.close()
         connection.close()
 
-
 @app.route('/event/unregister/<event_id>', methods=['POST'])
 @login_required
 def unregister_event(event_id):
@@ -283,11 +272,11 @@ def unregister_event(event_id):
         cursor.close()
         connection.close()
 
-
 @app.route('/event/create', methods=['GET', 'POST'])
 @login_required
 def create_event():
     position = session.get('position', 'none')
+    student_id = session.get('user_id')
     
     if position not in ['event_coordinator', 'club_leader', 'prefect']:
         flash('You do not have permission to create events', 'error')
@@ -303,7 +292,9 @@ def create_event():
         event_date = request.form.get('event_date', '')
         main_event = request.form.get('main_event', '')
         main_event_new = request.form.get('main_event_new', '').strip()
-        club_no = request.form.get('club_no', '')
+        created_by = student_id
+        club_no = request.form.get('club_no', '').strip()
+        event_summary = request.form.get('event_summary', '')
         
         if main_event_new:
             main_event = main_event_new
@@ -353,10 +344,10 @@ def create_event():
                 event_id = Event_ID_IS(next_no, grade_list, gender, main_event if main_event else None)
             
             cursor.execute("""
-                INSERT INTO events (event_id, event_name, event_type, grades_eligible, ages_eligible, gender, last_registration_date, event_date, main_event, club_id)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                INSERT INTO events (event_id, event_name, event_type, grades_eligible, ages_eligible, gender, last_registration_date, event_date, main_event, club_id, created_by, event_summary)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """,
-            (event_id, event_name, event_type, grades_eligible, ages_eligible, gender, last_registration_date, event_date, main_event if main_event else None, club_id))
+            (event_id, event_name, event_type, grades_eligible, ages_eligible, gender, last_registration_date, event_date, main_event if main_event else None, club_id, created_by, event_summary))
 
             connection.commit()
             flash(f'Event created successfully! Event ID: {event_id}', 'success')
@@ -380,11 +371,11 @@ def create_event():
     
     return render_template('create_event.html', main_events=main_events)
 
-
 @app.route('/event/manage/<event_id>')
 @login_required
 def manage_event(event_id):
     position = session.get('position', 'none')
+    user_id = session.get('user_id')
     connection = get_db_connection()
     cursor = get_db_cursor(connection)
     try:
@@ -405,7 +396,7 @@ def manage_event(event_id):
             can_manage = True
         elif position == 'event_coordinator' and event['event_type'] == 'interschool':
             can_manage = True
-        elif position == 'club_leader' and (event['event_type'] == 'interschool' or event.get('club_id') == user_club_id):
+        elif position == 'club_leader' and user_id == event['created_by'] and event.get('club_id') == user_club_id:
             can_manage = True
 
         if not can_manage:
@@ -439,7 +430,6 @@ def manage_event(event_id):
     
     return render_template('manage_event.html', event=event, registered_students=registered_students)
 
-
 @app.route('/event/add_student/<event_id>', methods=['POST'])
 @login_required
 def add_student_to_event(event_id):
@@ -459,6 +449,7 @@ def add_student_to_event(event_id):
         can_manage = False
         user_house = session.get('house')
         user_club_id = session.get('club_id')
+        user_id = session.get('user_id')
         
         if position == 'prefect':
             can_manage = True
@@ -466,7 +457,7 @@ def add_student_to_event(event_id):
             can_manage = True
         elif position == 'event_coordinator' and event['event_type'] == 'interschool':
             can_manage = True
-        elif position == 'club_leader' and event['event_type'] == 'interschool' and event.get('club_id') == user_club_id:
+        elif position == 'club_leader' and user_id == event['created_by'] and event.get('club_id') == user_club_id:
             can_manage = True
 
         if not can_manage:
@@ -495,14 +486,128 @@ def add_student_to_event(event_id):
         cursor.close()
         connection.close()
 
+@app.route('/event/remove_student/<event_id>', methods=['POST'])
+@login_required
+def remove_student_from_event(event_id):
+    position = session.get('position', 'none')
+    user_id = session.get('user_id')
+    student_id = request.form.get('student_id')
+    
+    connection = get_db_connection()
+    cursor = get_db_cursor(connection)
+    try:
+        cursor.execute("SELECT * FROM events WHERE event_id = %s", (event_id,))
+        event = cursor.fetchone()
+        
+        if not event:
+            flash('Event not found', 'error')
+            return redirect(url_for('dashboard'))
+        
+        can_manage = False
+        user_house = session.get('house')
+        user_club_id = session.get('club_id')
+        
+        if position == 'prefect':
+            can_manage = True
+        elif position == 'house_leader' and event['event_type'] == 'interhouse' and user_house:
+            can_manage = True
+        elif position == 'event_coordinator' and event['event_type'] == 'interschool':
+            can_manage = True
+        elif position == 'club_leader' and user_id == event['created_by'] and event.get('club_id') == user_club_id:
+            can_manage = True
+        
+        if not can_manage:
+            flash('You do not have permission to manage this event', 'error')
+            return redirect(url_for('dashboard'))
+        
+        if position == 'house_leader' and user_house:
+            cursor.execute("SELECT house FROM students WHERE student_id = %s", (student_id,))
+            student = cursor.fetchone()
+            if not student or student['house'] != user_house:
+                flash('You can only remove students from your own house from interhouse events', 'error')
+                return redirect(url_for('manage_event', event_id=event_id))
+        
+        cursor.execute("DELETE FROM registrations WHERE student_id = %s AND event_id = %s",
+                    (student_id, event_id))
+        connection.commit()
+        flash('Student removed from event successfully', 'success')
+        return redirect(url_for('manage_event', event_id=event_id))
+    finally:
+        cursor.close()
+        connection.close()
 
-'''
-remove student from event
-calendar
-search for events
-event summary
-'''
+@app.route('/search_students')
+@login_required
+def search_students():
+    query = request.args.get('q', '')
+    connection = get_db_connection()
+    cursor = get_db_cursor(connection)
+    try:
+        position = session.get('position', 'none')
+        user_house = session.get('house')
+        
+        if position == 'house_leader' and user_house:
+            if query:
+                cursor.execute("""
+                    SELECT s.student_id, s.name, s.grade, s.section, u.email
+                    FROM students s
+                    JOIN users u ON s.student_id = u.student_id
+                    WHERE s.house = %s AND (s.name LIKE %s OR u.email LIKE %s OR s.student_id LIKE %s)
+                    LIMIT 20
+                """,
+                (user_house, f'%{query}%', f'%{query}%', f'%{query}%'))
+            else:
+                cursor.execute("""
+                    SELECT s.student_id, s.name, s.grade, s.section, u.email
+                    FROM students s
+                    JOIN users u ON s.student_id = u.student_id
+                    WHERE s.house = %s
+                    LIMIT 20
+                """,
+                (user_house,))
+        else:
+            if query:
+                cursor.execute("""
+                    SELECT s.student_id, s.name, s.grade, s.section, u.email
+                    FROM students s
+                    JOIN users u ON s.student_id = u.student_id
+                    WHERE s.name LIKE %s OR u.email LIKE %s OR s.student_id LIKE %s
+                    LIMIT 20
+                """,
+                (f'%{query}%', f'%{query}%', f'%{query}%'))
+            else:
+                cursor.execute("""
+                    SELECT s.student_id, s.name, s.grade, s.section, u.email
+                    FROM students s
+                    JOIN users u ON s.student_id = u.student_id
+                    LIMIT 20
+                """)
+        
+        students = cursor.fetchall()
+        return jsonify([dict(s) for s in students])
+    finally:
+        cursor.close()
+        connection.close()
+
+@app.route('/event_summary/<event_id>')
+@login_required
+def event_summary(event_id):
+    connection = get_db_connection()
+    cursor = get_db_cursor(connection)
+    try:
+        cursor.execute("SELECT * FROM events WHERE event_id = %s", (event_id,))
+        event = cursor.fetchone()
+        
+        if not event:
+            flash('Event not found', 'error')
+            return redirect(url_for('dashboard'))
+                
+    finally:
+        cursor.close()
+        connection.close()
+    
+    return render_template('event_summary.html', event=event)
+
 
 if __name__ == '__main__':
-
     app.run(port=5001,debug=True)
