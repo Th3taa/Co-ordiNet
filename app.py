@@ -15,7 +15,7 @@ app.secret_key = '***'
 MYSQL_CONFIG = {
     'host': 'localhost',
     'user': 'root',
-    'password': '***',
+    'password': 'sql123',
     'database': 'student_events'
 }
 
@@ -435,6 +435,9 @@ def manage_event(event_id):
 def add_student_to_event(event_id):
     position = session.get('position', 'none')
     student_id = request.form.get('student_id')
+    if not student_id:
+        flash("Student doesn't exist")
+        return redirect(url_for('manage_event', event_id=event_id))
     
     connection = get_db_connection()
     cursor = get_db_cursor(connection)
@@ -607,6 +610,8 @@ def event_summary(event_id):
         connection.close()
     
     return render_template('event_summary.html', event=event)
+
+
 
 
 if __name__ == '__main__':
