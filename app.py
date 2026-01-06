@@ -15,7 +15,7 @@ app.secret_key = '***'
 MYSQL_CONFIG = {
     'host': 'localhost',
     'user': 'root',
-    'password': 'sql123',
+    'password': '***',
     'database': 'student_events'
 }
 
@@ -611,8 +611,61 @@ def event_summary(event_id):
     
     return render_template('event_summary.html', event=event)
 
+@app.route('/profile')
+@login_required
+def profile():
+    connection = get_db_connection()
+    cursor = get_db_cursor(connection)
+    try:
+        cursor.execute(" SELECT * FROM students WHERE student_id = %s", (session['user_id'],))
+        student = cursor.fetchone()
+        return render_template('profile.html', student=student)
+    finally:
+        cursor.close()
+        connection.close()
 
+@app.route('/calendar')
+@login_required
+def calendar():
+    connection = get_db_connection()
+    cursor = get_db_cursor(connection)
+    try:
+        cursor.execute(" SELECT event_id, event_name, event_date FROM events ORDER BY event_date ASC")
+        events = cursor.fetchall()
+        return render_template('calendar.html', events=events)
+    finally:
+        cursor.close()
+        connection.close()
+
+@app.route('/event_search')
+@login_required
+def event_search():
+    query = request.args.get('q', '')
+    connection = get_db_connection()
+    cursor = get_db_cursor(connection)
+    try:
+        if query:
+            cursor.execute("""
+                SELECT e.event_id, e.event_name, e.event_type, e.main_event, e.event_date 
+                FROM events e
+                WHERE e.name LIKE %s OR e.main_event LIKE %s or e.event_id LIKE %s
+                LIMIT 20
+            """,
+            (f'%{query}%', f'%{query}%', f'%{query}%'))
+        else:
+            cursor.execute("""
+                SELECT e.event_id, e.event_name, e.event_type, e.main_event, e.event_date 
+                FROM events e
+                LIMIT 20
+            """)
+
+        events = cursor.fetchall()
+        return jsonify([dict(e) for e in events])
+    finally:
+        cursor.close()
+        connection.close()
 
 
 if __name__ == '__main__':
     app.run(port=5001,debug=True)
+
