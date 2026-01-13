@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Admin{% endblock %}
+
+{% block content %}
+<div class="main-container">
+    <h2 class="mb-4">
+        <i class="bi bi-calendar3"></i> Admin Dashboard
+    </h2>
+    
+    <div class="admin-actions mb-4">
+        <a href="{{ url_for('add_student') }}" class="btn btn-primary">
+            <i class="bi bi-person-add"></i> Add Student
+        </a>
+        <a href="{{ url_for('remove_student') }}" class="btn btn-secondary">
+            <i class="bi bi-person-dash"></i> Remove Student
+        </a>
+        <a href="{{url_for('new_academic_session')}}" class="btn btn-success">
+            <i class="bi bi-calendar-plus"></i> New Academic Year
+        </a>
+        <a href="{{url_for('update_student')}}" class="btn btn-info">
+            <i class="bi bi-person-fill-up"></i> Update Student Info
+        </a>
+</div>
+{% endblock %}
+
