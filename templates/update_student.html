@@ -1,6 +1,6 @@
 {% extends "admin_base.html" %}
 
-{% block title %}Add Students{% endblock %}
+{% block title %}Update Student: {{ student_id }}{% endblock %}
 
 {% block content %}
 <div class="container">
@@ -8,31 +8,31 @@
         <div class="col-md-6">
             <div class="main-container">
                 <h2 class="text-center mb-4">
-                    <i class="bi bi-person-plus"></i> Add Student
+                    <i class="bi bi-person-gear"></i> Update Student
                 </h2>
-                <form method="POST" action="{{ url_for('add_student') }}">
+                <form method="POST" action="{{ url_for('update_student', student_id=student_id) }}">
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="name" class="form-label">Full Name</label>
-                            <input type="text" class="form-control" id="name" name="name" required>
+                            <input type="text" class="form-control" id="name" name="name">
                         </div>
                         <div class="col-md-3 mb-3">
                             <label for="grade" class="form-label">Grade</label>
-                            <input type="number" class="form-control" id="grade" name="grade" min="0" max="12" required>
+                            <input type="number" class="form-control" id="grade" name="grade" min="0" max="12">
                         </div>
                         <div class="col-md-3 mb-3">
                             <label for="section" class="form-label">Section</label>
-                            <input type="text" class="form-control" id="section" name="section" required>
+                            <input type="text" class="form-control" id="section" name="section">
                         </div>
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="birthdate" class="form-label">Birthdate</label>
-                            <input type="date" class="form-control" id="birthdate" name="birthdate" required>
+                            <input type="date" class="form-control" id="birthdate" name="birthdate">
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="gender" class="form-label">Gender</label>
-                            <select class="form-select" id="gender" name="gender" required>
+                            <select class="form-select" id="gender" name="gender">
                                 <option value="B">Male</option>
                                 <option value="G">Female</option>
                             </select>
@@ -50,24 +50,15 @@
                             </select>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label for="house" class="form-label">House</label>
-                            <select class="form-select" id="house" name="house" required>
-                                <option value="Pioneers">Pioneers</option>
-                                <option value="Challengers">Challengers</option>
-                                <option value="Explorers">Explorers</option>
-                                <option value="Voyagers">Voyagers</option>
-                            </select>
+                            <label for="club" class="form-label">Club</label>
+                            <input type="text" class="form-control" id="name" name="name">
                         </div>
                     </div>
-                    <div class="col-md-6 mb-3">
-                        <label for="club" class="form-label">Club</label>
-                        <input type="text" class="form-control" id="name" name="name">
-                    </div>
                     <div class="alert alert-info">
-                        <i class="bi bi-info-circle"></i> Student will be added to database.
+                        <i class="bi bi-info-circle"></i> Student data will be altered to database.
                     </div>
-                    <button type="submit" class="btn btn-primary btn-custom w-100">
-                        <i class="bi bi-person-plus"></i> Add
+                    <button href=url_for('manage_students') type="submit" class="btn btn-primary btn-custom w-100">
+                        <i class="bi bi-person-gear"></i> Update Student
                     </button>
                 </form>
                 <hr>

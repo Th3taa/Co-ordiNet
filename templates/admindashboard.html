@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "admin_base.html" %}
 
 {% block title %}Dashboard - Admin{% endblock %}
 
@@ -12,14 +12,11 @@
         <a href="{{ url_for('add_student') }}" class="btn btn-primary">
             <i class="bi bi-person-add"></i> Add Student
         </a>
-        <a href="{{ url_for('remove_student') }}" class="btn btn-secondary">
-            <i class="bi bi-person-dash"></i> Remove Student
+        <a href="{{ url_for('manage_students') }}" class="btn btn-secondary">
+            <i class="bi bi-person"></i> Manage Student
         </a>
         <a href="{{url_for('new_academic_session')}}" class="btn btn-success">
             <i class="bi bi-calendar-plus"></i> New Academic Year
-        </a>
-        <a href="{{url_for('update_student')}}" class="btn btn-info">
-            <i class="bi bi-person-fill-up"></i> Update Student Info
         </a>
 </div>
 {% endblock %}

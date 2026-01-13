@@ -1,59 +1,66 @@
-{% extends "base.html" %}
+{% extends "admin_base.html" %}
 
-{% block title %}Manage Student{% endblock %}
+{% block title %}Manage Students{% endblock %}
 
 {% block content %}
 <div class="main-container">
     <h2 class="mb-4">
-        <i class="bi bi-gear"></i> Manage Student: {{ student.name }}
+        <i class="bi bi-gear"></i> Manage Students:
     </h2>
     
-    <div class="card mb-4">
-        <div class="card-body">
-            <h5>Student Details</h5>
-            <p><strong>Student ID:</strong> {{ student.student_id }}</p>
-            <p><strong>House:</strong> {{ student.house }}</p>
-            <p><strong>Grade:</strong> {{ student.grade}}</p>
-            <p><strong>Section:</strong> {{ student.section}}</p>
-            <p><strong>Age:</strong> {{ student.age }}</p>
-            <p><strong>Gender:</strong> 
-                {% if student.gender == 'G' %}Female
-                {% elif student.gender == 'B' %}Male 
-                {% else %}N/A
-                {% endif %}<p></p>
-            <p><strong>Date of Birth:</strong> {{ student.birthdate }}
-            </p>
-            <p><strong>Position:</strong> 
-                {% if student.position %}{{ student.position.replace('_', ' ').title() }}
-                {% else %}None
-            </p>
+    <h4 class="mb-3">No. of Students ({{ students|length }})</h4>
+        
+    {% if students %}
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Student ID</th>
+                    <th>Name</th>
+                    <th>Grade</th>
+                    <th>Section</th>
+                    <th>Email</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for student in students %}
+                <tr>
+                    <td>{{ student.student_id }}</td>
+                    <td>{{ student.name }}</td>
+                    <td>{{ student.grade }}</td>
+                    <td>{{ student.section }}</td>
+                    <td>{{ student.email }}</td>
+                    <td>
+                        <form method="POST" action="{{ url_for('remove_student', student_id=student.student_id) }}" 
+                              style="display: inline;" onsubmit="return confirm('Are you sure you want to remove this student?');">
+                            <input type="hidden" name="student_id" value="{{ student.student_id }}">
+                            <button type="submit" class="btn btn-danger btn-sm">
+                                <i class="bi bi-trash"></i> Remove
+                            </button>
+                        </form>
+                    </td>
+                    <td>
+                        <form method="POST" action="{{ url_for('update_student', student_id=student.student_id) }}" 
+                              style="display: inline;">
+                            <input type="hidden" name="student_id" value="{{ student.student_id }}">
+                            <button type="submit" class="btn btn-primary btn-sm">
+                                <i class="bi bi-person-gear"></i> Update
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
-    
-    
-    <div class="card mb-4">
-        <div class="card-body">
-            <form method="POST" action="{{ url_for('remove_student', student_id=student.student_id) }}" id="removeStudentForm">
-                <div class="mb-3">
-                    <label for="student_search" class="form-label">Search Student</label>
-                    <input type="text" class="form-control" id="student_search" 
-                           placeholder="Search by name, email, or ID..." autocomplete="off">
-                    <div id="student_results" class="list-group mt-2" style="display: none; max-height: 200px; overflow-y: auto;"></div>
-                </div>
-                <input type="hidden" id="student_id" name="student_id" required>
-                <button type="submit" class="btn btn-success btn-custom">
-                    <i class="bi bi-person-plus"></i> Add Student
-                </button>
-            </form>
-        </div>
+    {% else %}
+    <div class="alert alert-info">
+        <i class="bi bi-info-circle"></i> No students.
     </div>
-
-    <form method="POST" action="{{ url_for('confirm_remove_student', student_id=student.student_id) }}" id="confirmRemoveForm">
-        <button type="submit" class="btn btn-danger btn-custom" 
-                onclick="return confirm('Are you sure you want to remove this student? This action cannot be undone.');">
-            <i class="bi bi-person-dash"></i> Remove Student
-        </button>
+    {% endif %}
     
-    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary btn-custom mt-3">
+    <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary btn-custom mt-3">
         <i class="bi bi-arrow-left"></i> Back to Dashboard
     </a>
 </div>
@@ -113,4 +120,3 @@ document.addEventListener('click', function(event) {
 });
 </script>
 {% endblock %}
-

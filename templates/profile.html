@@ -26,64 +26,12 @@
             <p><strong>Position:</strong> 
                 {% if student.position %}{{ student.position.replace('_', ' ').title() }}
                 {% else %}None
+                {% endif %}
             </p>
         </div>
     </div>    
 </div>
-
-<script>
-let searchTimeout;
-const studentSearch = document.getElementById('student_search');
-const studentResults = document.getElementById('student_results');
-const studentIdInput = document.getElementById('student_id');
-
-studentSearch.addEventListener('input', function() {
-    clearTimeout(searchTimeout);
-    const query = this.value.trim();
-    
-    if (query.length < 2) {
-        studentResults.style.display = 'none';
-        return;
-    }
-    
-    searchTimeout = setTimeout(() => {
-        fetch(`{{ url_for('search_students') }}?q=${encodeURIComponent(query)}`)
-            .then(response => response.json())
-            .then(data => {
-                studentResults.innerHTML = '';
-                if (data.length === 0) {
-                    studentResults.innerHTML = '<div class="list-group-item">No students found</div>';
-                } else {
-                    data.forEach(student => {
-                        const item = document.createElement('button');
-                        item.type = 'button';
-                        item.className = 'list-group-item list-group-item-action';
-                        item.innerHTML = `
-                            <strong>${student.name}</strong> (ID: ${student.student_id})<br>
-                            <small>Grade ${student.grade}-${student.section} | ${student.email}</small>
-                        `;
-                        item.addEventListener('click', () => {
-                            studentIdInput.value = student.student_id;
-                            studentSearch.value = `${student.name} (ID: ${student.student_id})`;
-                            studentResults.style.display = 'none';
-                        });
-                        studentResults.appendChild(item);
-                    });
-                }
-                studentResults.style.display = 'block';
-            })
-            .catch(error => {
-                console.error('Error:', error);
-            });
-    }, 300);
-});
-
-// Hide results when clicking outside
-document.addEventListener('click', function(event) {
-    if (!studentSearch.contains(event.target) && !studentResults.contains(event.target)) {
-        studentResults.style.display = 'none';
-    }
-});
-</script>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary btn-custom mt-3">
+        <i class="bi bi-arrow-left"></i> Back to Dashboard
+    </a>
 {% endblock %}
-
