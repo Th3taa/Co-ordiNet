@@ -5,7 +5,7 @@ from functools import wraps
 from datetime import datetime
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
-from utils import Event_ID_IH, Event_ID_IS
+from utils import Event_ID_IH, Event_ID_IS, age_from_dob
 
 
 app = Flask(__name__)
@@ -15,7 +15,7 @@ app.secret_key = '***'
 MYSQL_CONFIG = {
     'host': 'localhost',
     'user': 'root',
-    'password': '***',
+    'password': 'sql123',
     'database': 'student_events'
 }
 
@@ -54,15 +54,6 @@ def role_required(*roles):
             return f(*args, **kwargs)
         return decorated_function
     return decorator
-
-def grades_to_hex(grades):
-    hex_map = {i: hex(i)[-1].upper() for i in range(1, 13)}
-    return ''.join([hex_map.get(g, '0') for g in sorted(grades)])
-
-def hex_to_grades(hex_str):
-    hex_to_num = {hex(i)[-1].upper(): i for i in range(1, 13)}
-    return [hex_to_num.get(h, 0) for h in hex_str if h in hex_to_num]
-
 
 
 @app.route('/')
@@ -154,8 +145,8 @@ def register():
             """, 
             (student['student_id'], email, hashed_password, student['position']))
             connection.commit()
-            flash('Registration successful! Please login.', 'success')
-            return redirect(url_for('login'))
+            login()
+            return redirect(url_for('dashboard'))
         
         except Exception as e:
             connection.rollback()
@@ -230,9 +221,8 @@ def register_event(event_id):
         if event['ages_eligible']:
             eligible_ages = [int(a) for a in event['ages_eligible'].split(',') if a.strip()]
             birthdate = datetime.strptime(session.get('birthdate', '2000-01-01'), '%Y-%m-%d').date()
-            age = current_date - birthdate
-            age_years = age.days // 365
-            if age_years not in eligible_ages:
+            age = age_from_dob(birthdate)
+            if age not in eligible_ages:
                 flash('You are not eligible for this event based on your age', 'error')
                 return redirect(url_for('dashboard'))
         
@@ -619,6 +609,8 @@ def profile():
     try:
         cursor.execute(" SELECT * FROM students WHERE student_id = %s", (session['user_id'],))
         student = cursor.fetchone()
+        birthdate = datetime.strptime(session.get('birthdate', '2000-01-01'), '%Y-%m-%d').date()
+        student['age'] = age_from_dob(birthdate)
         return render_template('profile.html', student=student)
     finally:
         cursor.close()
@@ -665,7 +657,5 @@ def event_search():
         cursor.close()
         connection.close()
 
-
 if __name__ == '__main__':
     app.run(port=5001,debug=True)
-
