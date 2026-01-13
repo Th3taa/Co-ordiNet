@@ -20,7 +20,6 @@ MYSQL_CONFIG = {
 }
 
 ph = PasswordHasher()
-totp = pyotp.TOTP('JBSWY3DPEHPK3PXP')  
 
 def get_db_connection():
     try:
@@ -44,7 +43,7 @@ def login_required(f):
 @app.route('/')
 def index():
     if 'user_id' in session:
-        return redirect(url_for('admindashboard'))
+        return redirect(url_for('admin_dashboard'))
     return redirect(url_for('login'))
 
 @app.route('/login', methods=['GET','POST'])
@@ -71,6 +70,7 @@ def login():
                     session['temp_admin_id'] = admin['id']
                     session['temp_admin_name'] = admin['name']
                     session['temp_admin_secret'] = user_secret
+                    session['temp_admin_email'] = email
                     
                     totp = pyotp.TOTP(user_secret, interval=600)
                     current_code = totp.now()
@@ -87,7 +87,7 @@ def login():
             cursor.close()
             connection.close()
             
-    return render_template('login.html')
+    return render_template('admin_login.html')
 
 @app.route('/verify-otp', methods=['GET', 'POST'])
 def verify_otp():
@@ -98,13 +98,14 @@ def verify_otp():
         user_code = request.form.get('otp_code')
         user_secret = session.get('temp_admin_secret')
         
-        totp = pyotp.TOTP(user_secret, interval=600)
+        totp = pyotp.TOTP(user_secret, interval=240)
         
         if totp.verify(user_code):
             session['user_id'] = session.pop('temp_admin_id')
             session['name'] = session.pop('temp_admin_name')
             session.pop('temp_admin_secret')
             session['role'] = 'admin'
+            session['email'] = session.pop('temp_admin_email')
             
             return redirect(url_for('admin_dashboard'))
         else:
@@ -113,7 +114,7 @@ def verify_otp():
     return render_template('verify_otp.html')
 
 
-@app.route('/add_student', methods=['POST'])
+@app.route('/add_student', methods=['GET','POST'])
 def add_student():
     if request.method == 'POST':
         connection = get_db_connection()
@@ -123,9 +124,9 @@ def add_student():
         grade = request.form.get('grade')
         section = request.form.get('section')
         gender = request.form.get('gender')
-        date_of_birth = request.form.get('date_of_birth')
+        date_of_birth = request.form.get('birthdate')
         position = request.form.get('position')
-        club = request.form.get('club') if position == 'club_leader' else None
+        club = request.form.get('club',None)
 
         try:
             cursor.execute("SELECT student_id FROM students ORDER BY student_id DESC LIMIT 1")
@@ -134,9 +135,9 @@ def add_student():
             email = email_create(name, student_id)
 
             cursor.execute("""
-                INSERT INTO students (name, grade, section, birth_date, gender, email, club, position)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-            """, (name, grade, section, date_of_birth, gender, email, club, position))
+                INSERT INTO students (student_id, name, grade, section, birthdate, gender, email, club_id, position)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """, (student_id, name, grade, section, date_of_birth, gender, email, club, position))
             connection.commit()
 
             flash('Student added successfully', 'success')
@@ -153,21 +154,20 @@ def add_student():
 def admin_dashboard():
     return render_template('admindashboard.html')
 
-@app.route('/manage_students')
+@app.route('/manage_students', methods=['GET','POST'])
 @login_required
 def manage_students():
     connection = get_db_connection()
-    cursor = get_db_cursor()
+    cursor = get_db_cursor(connection)
 
     try:
         cursor.execute("""
-            SELECT s.student_id, s.name, s.grade, s.section, u.email
+            SELECT s.student_id, s.name, s.grade, s.section, s.email
             FROM students s
-            JOIN users u ON s.student_id = u.student_id
             ORDER BY s.student_id ASC
         """)
         students = cursor.fetchall()
-        return render_template('manage_students.html', students=students)
+        return render_template('manage_student.html', students=students)
     finally:
         cursor.close()
         connection.close()
@@ -186,7 +186,6 @@ def remove_student(student_id):
             connection.commit()
 
             flash('Student removed successfully', 'success')
-            return redirect(url_for('manage_students'))
         
         except Error as e:
             connection.rollback()
@@ -196,6 +195,9 @@ def remove_student(student_id):
         finally:
             cursor.close()
             connection.close()
+        return redirect(url_for('manage_students'))
+    
+    return redirect(url_for('manage_students'))
 
 @app.route('/new_academic_session', methods=['POST'])
 @login_required
@@ -239,29 +241,41 @@ def logout():
     session.clear()
     return redirect(url_for('login'))
 
-@app.route('/manage_student/update_student/<student_id>', methods=['POST'])
+@app.route('/manage_student/update_student/<student_id>', methods=['GET','POST'])
 @login_required
 def update_student(student_id):
     if request.method == 'POST':
         connection = get_db_connection()
         cursor = get_db_cursor(connection)
 
-        name = request.form.get('name')
-        grade = request.form.get('grade')
-        section = request.form.get('section')
-        gender = request.form.get('gender')
-        date_of_birth = request.form.get('date_of_birth')
+        name = request.form.get('name', None)
+        grade = request.form.get('grade', None)
+        section = request.form.get('section', None)
+        gender = request.form.get('gender', None)
+        date_of_birth = request.form.get('birthdate', None)
+        position = request.form.get('position', None)
+        club_id = request.form.get('club', None)
 
         try:
-            cursor.execute("""
-                UPDATE students
-                SET name=%s, grade=%s, section=%s, birthdate=%s, gender=%s
-                WHERE student_id=%s
-            """, (name, grade, section, date_of_birth, gender, student_id))
-            connection.commit()
 
+            if name:
+                cursor.execute("UPDATE students SET name=%s WHERE student_id=%s", (name, student_id))
+            if grade:
+                cursor.execute("UPDATE students SET grade=%s WHERE student_id=%s", (grade, student_id))
+            if section:
+                cursor.execute("UPDATE students SET section=%s WHERE student_id=%s", (section, student_id))
+            if gender:
+                cursor.execute("UPDATE students SET gender=%s WHERE student_id=%s", (gender, student_id))
+            if date_of_birth:
+                cursor.execute("UPDATE students SET birthdate=%s WHERE student_id=%s", (date_of_birth, student_id))
+            if position:
+                cursor.execute("UPDATE students SET position=%s WHERE student_id=%s", (position, student_id))
+            if club_id:
+                cursor.execute("UPDATE students SET club=%s WHERE student_id=%s", (club_id, student_id))
+
+            connection.commit()
             flash('Student updated successfully', 'success')
-            return redirect(url_for('manage_students'))
+            return render_template('update_student.html', student_id = student_id)
 
         except Error as e:
             connection.rollback()
@@ -272,7 +286,8 @@ def update_student(student_id):
             cursor.close()
             connection.close()
 
-    render_template('update_student.html')
+    return redirect(url_for('manage_students'))
+
 
 @app.route('/update_students_xlsx', methods=['GET','POST']) #WORK IN PROGRESS
 @login_required

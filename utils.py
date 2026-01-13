@@ -26,7 +26,7 @@ def Event_ID_IS(n:int,grades:list,gender:str,main_event:str=None):
     return event_ID
 
 def age_from_dob(dob: datetime.date):
-    current_date = datetime.now().date()
+    current_date = datetime.date.today()
     age = current_date - dob
     age_years = age.days // 365
     
@@ -34,5 +34,7 @@ def age_from_dob(dob: datetime.date):
 
 def email_create(name: str, id:int, domain: str = "school.com"):
     id_padded = f"{id:04d}"
-    email = f"{name.lower()}@{domain}"
+    email = f"{name.lower()}{id_padded}@{domain}"
     return email
+
+
