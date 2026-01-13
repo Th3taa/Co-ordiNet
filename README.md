@@ -144,6 +144,14 @@ Format: `IS{NEXT_NO:4}{GENDER}${GRADES}{$MAIN_EVENT}`
 - `registered_at` (TIMESTAMP)
 - Unique constraint on (student_id, event_id)
 
+### Admin Table
+- `id` (INT, Primary Key, Auto Increment)
+- `name` (VARCHAR(100))
+- `email` (VARCHAR(100), Unique)
+- `password` (VARCHAR(255), Argon2 hashed)
+- `OTP key` (VARCHAR(255))
+- `created_at` (TIMESTAMP)
+
 ## Usage
 
 ### For Students
@@ -165,6 +173,7 @@ Format: `IS{NEXT_NO:4}{GENDER}${GRADES}{$MAIN_EVENT}`
 - Role-based access control
 - SQL injection protection (parameterized queries)
 - CSRF protection (Flask sessions)
+- pyotp for OTP admin login
 
 ## Notes
 - Event IDs are automatically generated based on the event type and parameters
@@ -194,4 +203,5 @@ This project is for educational purposes.
 - Dasmat Ajmani (Dasmax264)
 - Ira Agarwal (idktbhyay)
 - Swapnil Basu (Th3taa, bruhdrone)
+
 
