@@ -9,6 +9,7 @@ A Flask-based web application for managing interschool and interhouse events, wi
 - Register for events
 - Unregister from events
 - Automatic eligibility checking based on grade, age, and gender
+- View Event Details
 
 ### Student Council Roles
 
@@ -27,6 +28,11 @@ A Flask-based web application for managing interschool and interhouse events, wi
    - Complete access to all events
    - Can create and manage all event types
    - Can add/remove students from any event
+
+### For Admins (admin.py)
+- Login with your admin account
+- Manage Students by Updating Details or Deleting them
+- Add Students with complete Details
 
 ## Event ID Format
 
@@ -70,6 +76,11 @@ Format: `IS{NEXT_NO:4}{GENDER}${GRADES}{$MAIN_EVENT}`
    ```
    pip install -r requirements.txt
    ```
+   Alternately run
+   ```
+   pip install Flask argon2-cffi mysql-connector-python pyotp pandas
+   ```
+
 
 2. **Configure MySQL:**
    - Make sure MySQL is running
@@ -84,21 +95,24 @@ Format: `IS{NEXT_NO:4}{GENDER}${GRADES}{$MAIN_EVENT}`
      ```
 
 3. **Initialize the database:**
-   ```
-   python init_db.py
-   ```
+   Initialize Database with Data (Sample Data given under `\SQL Queries`)
    This will create:
    - The `student_events` database
-   - All required tables (students, events, registrations)
-   - A sample admin user (email: `admin@school.com`, password: `admin123`)
+   - All required tables (students, events, registrations, users, admins)
 
 4. **Run the application:**
    ```
    python app.py
    ```
+   OR
+   ```
+   python admin.py
+   ```   
 
 5. **Access the application:**
-   - Open your browser and go to `http://localhost:5001`
+   - Open your browser and go to:
+      -app.py: `http://localhost:5001`
+      -admin.py: `http://localhost:8080`
    - Login with an existing account or register a new account
 
 ## Database Schema
@@ -167,6 +181,13 @@ Format: `IS{NEXT_NO:4}{GENDER}${GRADES}{$MAIN_EVENT}`
 4. Use the search function to add students to events
 5. Remove students from events as needed
 
+### For Admins (admin.py)
+1. Login with your admin account
+2. Manage Students by Updating Details or Deleting them
+3. Add Students with complete Details
+4. Update Data at the end of the Academic Year (Grade+1 for all below 12)
+5. Update Data using an Excel Spreadsheet
+
 ## Security Features
 - Password hashing using Argon2
 - Session-based authentication
@@ -187,7 +208,7 @@ Format: `IS{NEXT_NO:4}{GENDER}${GRADES}{$MAIN_EVENT}`
 ### Database Connection Issues
 - Ensure MySQL server is running
 - Check database credentials in `app.py`
-- Verify the database exists (run `init_db.py` or the SQL Queries)
+- Verify the database exists (run the SQL Queries for Sample Data)
 
 ### Import Errors
 - Make sure all dependencies are installed: `pip install -r requirements.txt`
@@ -203,5 +224,4 @@ This project is for educational purposes.
 - Dasmat Ajmani (Dasmax264)
 - Ira Agarwal (idktbhyay)
 - Swapnil Basu (Th3taa, bruhdrone)
-
 
