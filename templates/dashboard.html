@@ -3,120 +3,124 @@
 {% block title %}Dashboard - Student Events{% endblock %}
 
 {% block content %}
-<div class="main-container">
-    <h2 class="mb-4">
-        <i class="bi bi-calendar3"></i> Events Dashboard
-    </h2>
-    
-    {% if events %}
-        {% for event in events %}
-        <div class="event-card">
-            <div class="d-flex justify-content-between align-items-start">
-                <div class="flex-grow-1">
-                    <h4>{{ event.event_name }}</h4>
-                    <p class="text-muted mb-2">
-                        <span class="badge bg-primary badge-custom">
-                            {% if event.event_type == 'interhouse' %}
-                                <i class="bi bi-house"></i> Interhouse
+<div class="page-wrapper">
+    <div class="app-card lg">
+        <div class="main-container">
+            <h2 class="mb-4">
+                <i class="bi bi-calendar3"></i> Events Dashboard
+            </h2>
+            
+            {% if events %}
+                {% for event in events %}
+                <div class="event-card">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <h4>{{ event.event_name }}</h4>
+                            <p class="text-muted mb-2">
+                                <span class="badge bg-primary badge-custom">
+                                    {% if event.event_type == 'interhouse' %}
+                                        <i class="bi bi-house"></i> Interhouse
+                                    {% else %}
+                                        <i class="bi bi-globe"></i> Interschool
+                                    {% endif %}
+                                </span>
+                                <span class="badge bg-secondary badge-custom">
+                                    ID: {{ event.event_id }}
+                                </span>
+                                {% if event.main_event %}
+                                <span class="badge bg-info badge-custom">
+                                    Part of: {{ event.main_event }}
+                                </span>
+                                {% endif %}
+                            </p>
+                            <div class="mb-2">
+                                {% if event.ages_eligible %}
+                                <small class="text-muted ms-3">
+                                    <i class="bi bi-calendar"></i> Ages: {{ event.ages_eligible }}
+                                </small>
+                                {% endif %}
+                                {% if event.grades_eligible %}
+                                <small class="text-muted">
+                                    <i class="bi bi-people"></i> Grades: {{ event.grades_eligible }}
+                                </small>
+                                {% endif %}
+                                <small class="text-muted ms-3">
+                                    <i class="bi bi-gender-ambiguous"></i> 
+                                    {% if event.gender == 'G' %}Girls Only
+                                    {% elif event.gender == 'B' %}Boys Only
+                                    {% else %}All Genders{% endif %}
+                                </small>
+                            </div>
+                            <small class="text-muted">
+                                <i class="bi bi-person-check"></i> {{ event.registered_count }} registered
+                            </small>
+                            <div class="d-block"></div>
+                            <small class="text-muted">
+                                <i class="bi bi-calendar"></i> Last Registration: {{ event.last_registration_date }}
+                            </small>
+                            <div class="d-block"></div>
+                            <small class="text-muted">
+                                <i class="bi bi-calendar"></i> Event Date: {{ event.event_date }}
+                            </small>
+                        </div>
+                        <div class="ms-3">
+                            {% if event.is_registered %}
+                            <form method="POST" action="{{ url_for('unregister_event', event_id=event.event_id) }}" style="display: inline;">
+                                <button type="submit" class="btn btn-danger btn-custom">
+                                    <i class="bi bi-x-circle"></i> Unregister
+                                </button>
+                            </form>
                             {% else %}
-                                <i class="bi bi-globe"></i> Interschool
+                            <form method="POST" action="{{ url_for('register_event', event_id=event.event_id) }}" style="display: inline;">
+                                <button type="submit" class="btn btn-success btn-custom">
+                                    <i class="bi bi-check-circle"></i> Register
+                                </button>
+                            </form>
                             {% endif %}
-                        </span>
-                        <span class="badge bg-secondary badge-custom">
-                            ID: {{ event.event_id }}
-                        </span>
-                        {% if event.main_event %}
-                        <span class="badge bg-info badge-custom">
-                            Part of: {{ event.main_event }}
-                        </span>
-                        {% endif %}
-                    </p>
-                    <div class="mb-2">
-                        {% if event.ages_eligible %}
-                        <small class="text-muted ms-3">
-                            <i class="bi bi-calendar"></i> Ages: {{ event.ages_eligible }}
-                        </small>
-                        {% endif %}
-                        {% if event.grades_eligible %}
-                        <small class="text-muted">
-                            <i class="bi bi-people"></i> Grades: {{ event.grades_eligible }}
-                        </small>
-                        {% endif %}
-                        <small class="text-muted ms-3">
-                            <i class="bi bi-gender-ambiguous"></i> 
-                            {% if event.gender == 'G' %}Girls Only
-                            {% elif event.gender == 'B' %}Boys Only
-                            {% else %}All Genders{% endif %}
-                        </small>
-                    </div>
-                    <small class="text-muted">
-                        <i class="bi bi-person-check"></i> {{ event.registered_count }} registered
-                    </small>
-                    <div class="d-block"></div>
-                    <small class="text-muted">
-                        <i class="bi bi-calendar"></i> Last Registration: {{ event.last_registration_date }}
-                    </small>
-                    <div class="d-block"></div>
-                    <small class="text-muted">
-                        <i class="bi bi-calendar"></i> Event Date: {{ event.event_date }}
-                    </small>
-                </div>
-                <div class="ms-3">
-                    {% if event.is_registered %}
-                    <form method="POST" action="{{ url_for('unregister_event', event_id=event.event_id) }}" style="display: inline;">
-                        <button type="submit" class="btn btn-danger btn-custom">
-                            <i class="bi bi-x-circle"></i> Unregister
-                        </button>
-                    </form>
-                    {% else %}
-                    <form method="POST" action="{{ url_for('register_event', event_id=event.event_id) }}" style="display: inline;">
-                        <button type="submit" class="btn btn-success btn-custom">
-                            <i class="bi bi-check-circle"></i> Register
-                        </button>
-                    </form>
-                    {% endif %}
-                </div>
-                <div class="ms-3">
-                    <form method="GET" action="{{ url_for('event_summary', event_id=event.event_id) }}" style="display: inline;">
-                        <button type="submit" class="btn btn-outline-info btn-custom">
-                            <i class="bi bi-eye"></i> Summary
-                        </button>
-                    </form>
-                </div>
-                <div class="ms-3">
-                    {% if session.position in ['house_leader', 'event_coordinator', 'club_leader', 'prefect'] %}
-                        {% set can_manage = False %}
-                        {% if session.position == 'prefect' %}
-                            {% set can_manage = True %}
-                        {% elif session.position == 'house_leader' and event.event_type == 'interhouse' %}
-                            {% set can_manage = True %}
-                        {% elif session.position == 'event_coordinator' and event.event_type == 'interschool' %}
-                            {% set can_manage = True %}
-                        {% elif session.position == 'club_leader' and event.event_type == 'interschool' %}
-                            {# Club leaders can only manage events from their club #}
-                            {% if event.club_id and session.club_id and event.club_id == session.club_id %}
-                                {% set can_manage = True %}
-                            {% else %}
+                        </div>
+                        <div class="ms-3">
+                            <form method="GET" action="{{ url_for('event_summary', event_id=event.event_id) }}" style="display: inline;">
+                                <button type="submit" class="btn btn-outline-info btn-custom">
+                                    <i class="bi bi-eye"></i> Summary
+                                </button>
+                            </form>
+                        </div>
+                        <div class="ms-3">
+                            {% if session.position in ['house_leader', 'event_coordinator', 'club_leader', 'prefect'] %}
                                 {% set can_manage = False %}
+                                {% if session.position == 'prefect' %}
+                                    {% set can_manage = True %}
+                                {% elif session.position == 'house_leader' and event.event_type == 'interhouse' %}
+                                    {% set can_manage = True %}
+                                {% elif session.position == 'event_coordinator' and event.event_type == 'interschool' %}
+                                    {% set can_manage = True %}
+                                {% elif session.position == 'club_leader' and event.event_type == 'interschool' %}
+                                    {# Club leaders can only manage events from their club #}
+                                    {% if event.club_id and session.club_id and event.club_id == session.club_id %}
+                                        {% set can_manage = True %}
+                                    {% else %}
+                                        {% set can_manage = False %}
+                                    {% endif %}
+                                {% endif %}
+                                
+                                {% if can_manage %}
+                                <a href="{{ url_for('manage_event', event_id=event.event_id) }}" class="btn btn-outline-primary btn-custom">
+                                    <i class="bi bi-gear"></i> Manage
+                                </a>
+                                {% endif %}
                             {% endif %}
-                        {% endif %}
-                        
-                        {% if can_manage %}
-                        <a href="{{ url_for('manage_event', event_id=event.event_id) }}" class="btn btn-outline-primary btn-custom">
-                            <i class="bi bi-gear"></i> Manage
-                        </a>
-                        {% endif %}
-                    {% endif %}
+                        </div>
+                    </div>
                 </div>
-            </div>
+                {% endfor %}
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-calendar-x" style="font-size: 4rem; color: #ccc;"></i>
+                    <p class="text-muted mt-3">No events available at the moment.</p>
+                </div>
+            {% endif %}
         </div>
-        {% endfor %}
-    {% else %}
-        <div class="text-center py-5">
-            <i class="bi bi-calendar-x" style="font-size: 4rem; color: #ccc;"></i>
-            <p class="text-muted mt-3">No events available at the moment.</p>
-        </div>
-    {% endif %}
+    </div>
 </div>
 {% endblock %}
 
