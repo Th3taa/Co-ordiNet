@@ -5,7 +5,7 @@ from functools import wraps
 from datetime import datetime
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
-from utils import Event_ID_IH, Event_ID_IS, age_from_dob
+from utils import Event_ID_IH, Event_ID_IS, age_from_dob, tgt_name
 
 
 app = Flask(__name__)
@@ -107,24 +107,26 @@ def login():
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
-        name = request.form.get('name')
+        first_name = request.form.get('first-name')
+        middle_name = request.form.get('middle_name', None)
+        last_name = request.form.get('last-name')
         grade = int(request.form.get('grade'))
         section = request.form.get('section')
-        birthdate = request.form.get('birthdate')
-        gender = request.form.get('gender')
         email = request.form.get('email')
         password = request.form.get('password')
         
         hashed_password = ph.hash(password)
         
+        name=tgt_name(first_name,  middle_name, last_name)
+
         connection = get_db_connection()
         cursor = get_db_cursor(connection)
         try:
             cursor.execute("""
                 SELECT student_id, position FROM students 
-                WHERE name = %s AND grade = %s AND section = %s AND birthdate = %s AND gender = %s AND email = %s
+                WHERE name = %s AND grade = %s AND section = %s AND email = %s
             """,
-            (name, grade, section, birthdate, gender, email))
+            (name, grade, section, email))
             student = cursor.fetchone()
             
             if not student:

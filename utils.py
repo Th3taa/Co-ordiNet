@@ -37,4 +37,12 @@ def email_create(name: str, id:int, domain: str = "school.com"):
     email = f"{name.lower()}{id_padded}@{domain}"
     return email
 
+def tgt_name(first_name: str, middle_name: str | None, last_name: str):
+    first = first_name.strip()
+    last = last_name.strip()
+    if middle_name:
+        middle = middle_name.strip()
+        return f"{first} {middle} {last}"
+    return f"{first} {last}"
+
 
