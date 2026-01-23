@@ -5,7 +5,7 @@ USE student_events;
 
 -- Students table. Holds Student ID(Primary Key), Name, Grade, Section, Birthdate, Gender, Email and Position (if exists)
 CREATE TABLE IF NOT EXISTS students (
-		student_id INT AUTO_INCREMENT PRIMARY KEY,
+		student_id INT PRIMARY KEY,
 		name VARCHAR(100) NOT NULL,
 		grade INT NOT NULL,
 		section VARCHAR(10) NOT NULL,
@@ -54,4 +54,18 @@ CREATE TABLE IF NOT EXISTS registrations (
 		FOREIGN KEY (student_id) REFERENCES students(student_id) ON DELETE CASCADE,
 		FOREIGN KEY (event_id) REFERENCES events(event_id) ON DELETE CASCADE,
 		UNIQUE KEY unique_registration (student_id, event_id)
-	)
+	);
+
+CREATE TABLE IF NOT EXISTS admin (
+	id INT AUTO_INCREMENT PRIMARY KEY,
+	name VARCHAR(100) NOT NULL,
+	email VARCHAR(100) UNIQUE NOT NULL,
+	password VARCHAR(255) NOT NULL,
+	otp_secret VARCHAR(32),
+	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS clubs (
+		club_id VARCHAR(100) PRIMARY KEY,
+		club_name VARCHAR(200) NOT NULL,
+	);
