@@ -2,12 +2,12 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 import mysql.connector
 from mysql.connector import Error
 from functools import wraps
-from datetime import datetime
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
 from utils import email_create
 import pandas as pd
 import pyotp
+from utils import email_create, tgt_name
 
 app = Flask(__name__)
 app.secret_key = '***'
@@ -31,6 +31,17 @@ def get_db_connection():
 
 def get_db_cursor(connection):
     return connection.cursor(dictionary=True)
+
+def get_next_student_id():
+    connection = get_db_connection()
+    cursor = get_db_cursor(connection)
+    try:
+        cursor.execute("SELECT MAX(student_id) AS max FROM students")
+        result = cursor.fetchone()
+        return (result['max'] or 0) + 1
+    finally:
+        cursor.close()
+        connection.close()
 
 def login_required(f):
     @wraps(f)
@@ -61,7 +72,8 @@ def login():
             if admin:
                 try:
                     ph.verify(admin['password'], password)
-                    user_secret = admin.get('otp_secret', None)
+                    user_secret = None
+
                     if not user_secret:
                         user_secret = pyotp.random_base32()
                         cursor.execute("UPDATE admin SET otp_secret = %s WHERE id = %s", (user_secret, admin['id']))
@@ -72,17 +84,20 @@ def login():
                     session['temp_admin_secret'] = user_secret
                     session['temp_admin_email'] = email
                     
-                    totp = pyotp.TOTP(user_secret, interval=600)
+                    totp = pyotp.TOTP(user_secret.upper(), interval=600)
                     current_code = totp.now()
-                    
-                    print(f"Login code for {email}: {current_code}")
+                                        
+                    print(f"Login code for : {current_code}")
+                    flash(f'{current_code}', 'info')
                     
                     return redirect(url_for('verify_otp'))
                 
                 except VerifyMismatchError:
                     flash('Invalid email or password', 'error')
+
             else:
                 flash('Invalid email or password', 'error')
+                
         finally:
             cursor.close()
             connection.close()
@@ -98,7 +113,7 @@ def verify_otp():
         user_code = request.form.get('otp_code')
         user_secret = session.get('temp_admin_secret')
         
-        totp = pyotp.TOTP(user_secret, interval=240)
+        totp = pyotp.TOTP(user_secret, interval=600)
         
         if totp.verify(user_code):
             session['user_id'] = session.pop('temp_admin_id')
@@ -120,13 +135,17 @@ def add_student():
         connection = get_db_connection()
         cursor = get_db_cursor(connection)
 
-        name = request.form.get('name')
+        first_name = request.form.get('first-name')
+        middle_name = request.form.get('middle-name')
+        last_name = request.form.get('last-name')
+        name = tgt_name(first_name, middle_name, last_name)
         grade = request.form.get('grade')
         section = request.form.get('section')
         gender = request.form.get('gender')
         date_of_birth = request.form.get('birthdate')
-        position = request.form.get('position')
-        club = request.form.get('club',None)
+        position = request.form.get('position', None)
+        position = position if position in ['prefect', 'house_leader', 'event_coordinator', 'club_leader'] else None
+        club = request.form.get('club', None)
 
         try:
             cursor.execute("SELECT student_id FROM students ORDER BY student_id DESC LIMIT 1")
@@ -135,9 +154,9 @@ def add_student():
             email = email_create(name, student_id)
 
             cursor.execute("""
-                INSERT INTO students (student_id, name, grade, section, birthdate, gender, email, club_id, position)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-            """, (student_id, name, grade, section, date_of_birth, gender, email, club, position))
+                INSERT INTO students (name, grade, section, birthdate, gender, email, club_id, position)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            """, (name, grade, section, date_of_birth, gender, email, club, position))
             connection.commit()
 
             flash('Student added successfully', 'success')
@@ -199,7 +218,7 @@ def remove_student(student_id):
     
     return redirect(url_for('manage_students'))
 
-@app.route('/new_academic_session', methods=['POST'])
+@app.route('/new_academic_session', methods=['GET', 'POST'])
 @login_required
 def new_academic_session():
     connection = get_db_connection()
@@ -217,7 +236,7 @@ def new_academic_session():
     except Error as e:
         connection.rollback()
         flash(f'Error processing grade 12 students: {e}', 'error')
-        return redirect(url_for('admindashboard'))
+        return redirect(url_for('admin_dashboard'))
     
     try:
         cursor.execute("UPDATE students SET grade = grade + 1 WHERE grade < 12")
@@ -227,13 +246,13 @@ def new_academic_session():
     except Error as e:
         connection.rollback()
         flash(f'Error updating academic session: {e}', 'error')
-        return redirect(url_for('admindashboard'))
+        return redirect(url_for('admin_dashboard'))
     
     finally:
         cursor.close()
         connection.close()
 
-    return redirect(url_for('admindashboard'))
+    return redirect(url_for('admin_dashboard'))
 
 @app.route('/logout')
 @login_required
@@ -248,12 +267,16 @@ def update_student(student_id):
         connection = get_db_connection()
         cursor = get_db_cursor(connection)
 
-        name = request.form.get('name', None)
+        first_name = request.form.get('first-name', '')
+        middle_name = request.form.get('middle-name', None)
+        last_name = request.form.get('last-name', '')
+        name = tgt_name(first_name, middle_name, last_name)
         grade = request.form.get('grade', None)
         section = request.form.get('section', None)
         gender = request.form.get('gender', None)
         date_of_birth = request.form.get('birthdate', None)
         position = request.form.get('position', None)
+        position = position if position in ['prefect', 'house_leader', 'event_coordinator', 'club_leader'] else None
         club_id = request.form.get('club', None)
 
         try:
@@ -392,8 +415,6 @@ def search_students():
     finally:
         cursor.close()
         connection.close()
-
-
 
 if __name__ == '__main__':
     app.run(debug=True, port=8080)
