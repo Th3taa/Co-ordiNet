@@ -44,5 +44,3 @@ def tgt_name(first_name: str, middle_name: str | None, last_name: str):
         middle = middle_name.strip()
         return f"{first} {middle} {last}"
     return f"{first} {last}"
-
-

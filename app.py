@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 import mysql.connector
 from mysql.connector import Error
 from functools import wraps
-from datetime import datetime
+from datetime import datetime, date
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
 from utils import Event_ID_IH, Event_ID_IS, age_from_dob, tgt_name
@@ -221,12 +221,26 @@ def register_event(event_id):
                 return redirect(url_for('dashboard'))
 
         if event['ages_eligible']:
-            eligible_ages = [int(a) for a in event['ages_eligible'].split(',') if a.strip()]
-            birthdate = datetime.strptime(session.get('birthdate', '2000-01-01'), '%Y-%m-%d').date()
+            age_rule = event['ages_eligible']
+            birthdate = datetime.strptime(
+                session.get('birthdate', '2000-01-01'),
+                '%Y-%m-%d'
+            ).date()
             age = age_from_dob(birthdate)
-            if age not in eligible_ages:
+            eligible = True
+            if '-' in age_rule:
+                min_age, max_age = map(int, age_rule.split('-'))
+                eligible = min_age <= age <= max_age
+            elif age_rule.endswith('+'):
+                min_age = int(age_rule[:-1])
+                eligible = age >= min_age
+            elif age_rule.startswith('≤'):
+                max_age = int(age_rule[1:])
+                eligible = age <= max_age
+            if not eligible:
                 flash('You are not eligible for this event based on your age', 'error')
                 return redirect(url_for('dashboard'))
+
         
         if event['gender'] and event['gender'] != 'A':
             if event['gender'] == 'G' and session['gender'] != 'G':
@@ -277,8 +291,9 @@ def create_event():
     if request.method == 'POST':
         event_name = request.form.get('event_name')
         event_type = request.form.get('event_type')
-        grades_eligible = request.form.get('grades_eligible', '')
-        ages_eligible = request.form.get('ages_eligible', '')
+        grade_mode = request.form.get('grade_mode')
+        age_min = request.form.get('age_min')
+        age_max = request.form.get('age_max')
         gender = request.form.get('gender', 'A')
         last_registration_date = request.form.get('last_registration_date', '')
         event_date = request.form.get('event_date', '')
@@ -288,6 +303,18 @@ def create_event():
         club_no = request.form.get('club_no', '').strip()
         event_summary = request.form.get('event_summary', '')
         
+        if age_min and age_max and int(age_min) > int(age_max):
+            flash("Minimum age cannot be greater than maximum age", "error")
+            return redirect(url_for('create_event'))
+
+        last_reg = datetime.strptime(last_registration_date, '%Y-%m-%d').date()
+        event_day = datetime.strptime(event_date, '%Y-%m-%d').date()
+        today = date.today()
+
+        if event_day < today or last_reg < today or last_reg > event_day:
+            flash('Invalid event or registration date', 'error')
+            return redirect(url_for('create_event'))
+
         if main_event_new:
             main_event = main_event_new
         
@@ -309,13 +336,22 @@ def create_event():
                     if not club_id:
                         flash('You must be assigned to a club to create interhouse events', 'error')
                         return redirect(url_for('create_event'))
-                
-                if grades_eligible:
-                    grade_list = [int(g.strip()) for g in grades_eligible.split(',')]
-                    grade_set = set(grade_list)
-                    event_id = Event_ID_IH(int(club_no), grade_set, gender)
+                if grade_mode == 'all':
+                    grade_list = list(range(1, 13))
                 else:
-                    event_id = Event_ID_IH(int(club_no), set(range(1, 13)), gender)
+                    grades = request.form.getlist("grades_eligible")
+                    grade_list = [int(g) for g in grades]
+
+                grades_eligible = ",".join(map(str, grade_list))
+                event_id = Event_ID_IH(int(club_no), set(grade_list), gender)
+                if age_min and age_max:
+                    ages_eligible = f"{age_min}-{age_max}"
+                elif age_min:
+                    ages_eligible = f"{age_min}+"
+                elif age_max:
+                    ages_eligible = f"≤{age_max}"
+                else:
+                    ages_eligible = None
             
             else:
                 cursor.execute("SELECT COUNT(*) as count FROM events WHERE event_id LIKE 'IS%'")
@@ -328,13 +364,21 @@ def create_event():
                         flash('You must be assigned to a club to create interschool events', 'error')
                         return redirect(url_for('create_event'))
                 
-                if grades_eligible:
-                    grade_list = [int(g.strip()) for g in grades_eligible.split(',')]
-                else:
+                if grade_mode=='all':
                     grade_list = list(range(1, 13))
-                
+                else:
+                    grades=request.form.getlist("grades_eligible")
+                    grade_list = [int(g) for g in grades]
+                grades_eligible = ",".join(map(str, grade_list))
+                if age_min and age_max:
+                    ages_eligible = f"{age_min}-{age_max}"
+                elif age_min:
+                    ages_eligible = f"{age_min}+"
+                elif age_max:
+                    ages_eligible = f"≤{age_max}"
+                else:
+                    ages_eligible = None
                 event_id = Event_ID_IS(next_no, grade_list, gender, main_event if main_event else None)
-            
             cursor.execute("""
                 INSERT INTO events (event_id, event_name, event_type, grades_eligible, ages_eligible, gender, last_registration_date, event_date, main_event, club_id, created_by, event_summary)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
