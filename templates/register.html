@@ -11,15 +11,15 @@
                 </h2>
                 <form method="POST" action="{{ url_for('register') }}">
                     <div class="row">
-                        <div class="col-md-5 mb-3">
+                        <div class="col-md-4 mb-3">
                             <label for="name" class="form-label">First Name</label>
                             <input type="text" class="form-control" id="first-name" name="first-name" required>
                         </div>
-                        <div class="col-md-3 mb-3">
+                        <div class="col-md-4 mb-3">
                             <label for="name" class="form-label">Middle Name</label>
-                            <input type="text" class="form-control" id="middle-name" placeholder="Optional (Leave blank if N/A)" name="middle-name">
+                            <input type="text" class="form-control" id="middle-name" placeholder="Optional" name="middle-name">
                         </div>
-                        <div class="col-md-5 mb-3">
+                        <div class="col-md-4 mb-3">
                             <label for="name" class="form-label">Last Name</label>
                             <input type="text" class="form-control" id="last-name" name="" required>
                         </div>
@@ -101,4 +101,3 @@
     confirmation.addEventListener("input", validatePasswords);
 </script>
 {% endblock %}
-

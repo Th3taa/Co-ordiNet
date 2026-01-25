@@ -8,28 +8,58 @@
         <i class="bi bi-gear"></i> Manage Event: {{ event.event_name }}
     </h2>
     
-    <div class="card mb-4">
-        <div class="card-body">
-            <h5>Event Details</h5>
-            <p><strong>Event ID:</strong> {{ event.event_id }}</p>
-            <p><strong>Type:</strong> {{ event.event_type.replace('_', ' ').title() }}</p>
-            {% if event.grades_eligible %}
-            <p><strong>Grades Eligible:</strong> {{ event.grades_eligible }}</p>
-            {% endif %}
-            {% if event.ages_eligible %}
-            <p><strong>Ages Eligible:</strong> {{ event.ages_eligible }}</p>
-            {% endif %}
-            <p><strong>Gender:</strong> 
-                {% if event.gender == 'G' %}Girls Only
-                {% elif event.gender == 'B' %}Boys Only
-                {% else %}All Genders{% endif %}
-            </p>
-            {% if event.main_event %}
-            <p><strong>Main Event:</strong> {{ event.main_event }}</p>
-            {% endif %}
+    <div class="event-card mb-4">
+        <h5 class="mb-3">Event Details</h5>
+
+        <div class="row g-4">
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <span class="text-muted small">Event ID</span>
+                    <div class="fw-semibold">{{ event.event_id }}</div>
+                </div>
+
+                <div class="mb-3">
+                    <span class="text-muted small">Event Type</span>
+                    <div class="fw-semibold">
+                        {{ event.event_type.replace('_', ' ').title() }}
+                    </div>
+                </div>
+
+                {% if event.main_event %}
+                <div class="mb-3">
+                    <span class="text-muted small">Main Event</span>
+                    <div class="fw-semibold">{{ event.main_event }}</div>
+                </div>
+                {% endif %}
+
+                <div class="mb-3">
+                    <span class="text-muted small">Gender</span>
+                    <div class="fw-semibold">
+                        {% if event.gender == 'G' %}Girls Only
+                        {% elif event.gender == 'B' %}Boys Only
+                        {% else %}All Genders{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                {% if event.grades_eligible %}
+                <div class="mb-3">
+                    <span class="text-muted small">Grades Eligible</span>
+                    <div class="fw-semibold">{{ event.grades_eligible }}</div>
+                </div>
+                {% endif %}
+
+                {% if event.ages_eligible %}
+                <div class="mb-3">
+                    <span class="text-muted small">Ages Eligible</span>
+                    <div class="fw-semibold">{{ event.ages_eligible }}</div>
+                </div>
+                {% endif %}
+            </div>
         </div>
     </div>
-    
+
     <h4 class="mb-3">Registered Students ({{ registered_students|length }})</h4>
     
     <div class="card mb-4">

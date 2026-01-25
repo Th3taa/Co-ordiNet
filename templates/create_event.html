@@ -1,13 +1,13 @@
 {% extends "base.html" %}
 
-{% block title %}Create Event - Student Events{% endblock %}
+{% block title %}Create Event{% endblock %}
 
 {% block content %}
 <div class="page-wrapper">
     <div class="app-card lg">
         <div class="main-container">
-            <h2 class="mb-4">
-                <i class="bi bi-plus-circle"></i> Create New Event
+            <h2 class="mb-4" style="text-align: center;">
+                Create New Event
             </h2>
             
             <form method="POST" action="{{ url_for('create_event') }}">
@@ -19,7 +19,7 @@
                 <div class="mb-3">
                     <label for="event_type" class="form-label">Event Type</label>
                     <select class="form-select" id="event_type" name="event_type" required>
-                        <option value="">Select event type...</option>
+                        <option value="" disabled>Select event type</option>
                         {% if session.position in ['club_leader', 'prefect'] %}
                         <option value="interhouse">Interhouse</option>
                         {% endif %}
@@ -30,21 +30,59 @@
                 </div>
                 
                 <div class="mb-3" id="club_no_group" style="display: none;">
-                    <label for="club_no" class="form-label">Club Number (for Interhouse events)</label>
+                    <label for="club_no" class="form-label">Club Number</label>
                     <input type="number" class="form-control" id="club_no" name="club_no" min="1">
                 </div>
-                
                 <div class="mb-3">
-                    <label for="grades_eligible" class="form-label">Grades Eligible (comma-separated, e.g., 9,10,11,12 or leave empty for all)</label>
-                    <input type="text" class="form-control" id="grades_eligible" name="grades_eligible" 
-                        placeholder="e.g., 9,10,11,12">
-                    <small class="form-text text-muted">Leave empty if all grades are eligible</small>
+                    <label class="form-label">Grades Eligible</label>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="grade_mode" id="all_grades" value="all" checked>
+                        <label class="form-check-label" for="all_grades">
+                            All grades
+                        </label>
+                    </div>
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="radio" name="grade_mode" id="select_grades" value="select">
+                        <label class="form-check-label" for="select_grades">
+                            Select specific grades
+                        </label>
+                    </div>
+                    <div id="grade-checkboxes" class="d-none ms-3 mt-2">
+                        {% for i in range(1, 13) %}
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" name="grades_eligible" value="{{ i }}">
+                            <label class="form-check-label">{{ i }}</label>
+                        </div>
+                        {% endfor %}
+                    </div>
                 </div>
                 
                 <div class="mb-3">
-                    <label for="ages_eligible" class="form-label">Ages Eligible (optional)</label>
-                    <input type="text" class="form-control" id="ages_eligible" name="ages_eligible" 
-                        placeholder="e.g., 14-18">
+                    <label class="form-label">Ages Eligible</label>
+
+                    <div class="row g-2">
+                        <div class="col">
+                            <input type="number"
+                                class="form-control"
+                                name="age_min"
+                                min="5"
+                                max="25"
+                                placeholder="Min age">
+                        </div>
+
+                        <div class="col">
+                            <input type="number"
+                                class="form-control"
+                                name="age_max"
+                                min="5"
+                                max="25"
+                                placeholder="Max age">
+                        </div>
+                    </div>
+
+                    <small class="form-text text-muted">
+                        Leave any/both empty for different restrictions
+                    </small>
                 </div>
                 
                 <div class="mb-3">
@@ -96,30 +134,45 @@
 </div>
 
 <script>
-document.getElementById('event_type').addEventListener('change', function() {
-    const clubNoGroup = document.getElementById('club_no_group');
-    if (this.value === 'interhouse') {
-        clubNoGroup.style.display = 'block';
-        document.getElementById('club_no').required = true;
-    } else {
-        clubNoGroup.style.display = 'none';
-        document.getElementById('club_no').required = false;
+    document.addEventListener('DOMContentLoaded', function () {
+        const eventType = document.getElementById('event_type');
+        const clubNoGroup = document.getElementById('club_no_group');
+        const clubNoInput = document.getElementById('club_no');
+        if (!eventType) return;
+
+        eventType.addEventListener('change', function () {
+            if (this.value === 'interhouse') {
+                clubNoGroup.style.display = 'block';
+                clubNoInput.required = true;
+            } else {
+                clubNoGroup.style.display = 'none';
+                clubNoInput.required = false;
+                clubNoInput.value = '';
+            }
+        });
+    });
+
+    document.getElementById('main_event_new').addEventListener('input', function() {
+        if (this.value.trim()) {
+            document.getElementById('main_event').value = '';
+        }
+    });
+
+    document.getElementById('main_event').addEventListener('change', function() {
+        if (this.value) {
+            document.getElementById('main_event_new').value = '';
+        }
+    });
+
+    const allGrades = document.getElementById('all_grades');
+    const selectGrades = document.getElementById('select_grades');
+    const checkboxes = document.getElementById('grade-checkboxes');
+
+    function toggleGrades() {
+        checkboxes.classList.toggle('d-none', allGrades.checked);
     }
-});
 
-
-
-document.getElementById('main_event_new').addEventListener('input', function() {
-    if (this.value.trim()) {
-        document.getElementById('main_event').value = '';
-    }
-});
-
-document.getElementById('main_event').addEventListener('change', function() {
-    if (this.value) {
-        document.getElementById('main_event_new').value = '';
-    }
-});
+    allGrades.addEventListener('change', toggleGrades);
+    selectGrades.addEventListener('change', toggleGrades);
 </script>
 {% endblock %}
-
