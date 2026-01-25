@@ -15,7 +15,7 @@ app.secret_key = '***'
 MYSQL_CONFIG = {
     'host': 'localhost',
     'user': 'root',
-    'password': 'sql123',
+    'password': '***',
     'database': 'student_events'
 }
 
@@ -704,4 +704,5 @@ def event_search():
         connection.close()
 
 if __name__ == '__main__':
+
     app.run(port=5001,debug=True)
