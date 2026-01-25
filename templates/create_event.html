@@ -5,21 +5,25 @@
 {% block content %}
 <div class="page-wrapper">
     <div class="app-card lg">
-        <div class="main-container">
-            <h2 class="mb-4" style="text-align: center;">
-                Create New Event
-            </h2>
-            
-            <form method="POST" action="{{ url_for('create_event') }}">
-                <div class="mb-3">
-                    <label for="event_name" class="form-label">Event Name</label>
-                    <input type="text" class="form-control" id="event_name" name="event_name" required>
+<div class="main-container">
+    <h2 class="mb-4 text-center fw-semibold">
+        Create New Event
+    </h2>
+
+    <form method="POST" action="{{ url_for('create_event') }}" class="event-form">
+        <div class="form-section">
+            <h5 class="section-title">Basic Information</h5>
+
+            <div class="row g-3">
+                <div class="col-md-8">
+                    <label class="form-label">Event Name</label>
+                    <input type="text" class="form-control" name="event_name" required>
                 </div>
-                
-                <div class="mb-3">
-                    <label for="event_type" class="form-label">Event Type</label>
+
+                <div class="col-md-4">
+                    <label class="form-label">Event Type</label>
                     <select class="form-select" id="event_type" name="event_type" required>
-                        <option value="" disabled>Select event type</option>
+                        <option value="" disabled selected>Select</option>
                         {% if session.position in ['club_leader', 'prefect'] %}
                         <option value="interhouse">Interhouse</option>
                         {% endif %}
@@ -28,118 +32,121 @@
                         {% endif %}
                     </select>
                 </div>
-                
-                <div class="mb-3" id="club_no_group" style="display: none;">
-                    <label for="club_no" class="form-label">Club Number</label>
+            </div>
+
+            <div class="row g-3 mt-1" id="club_no_group" style="display: none;">
+                <div class="col-md-4">
+                    <label class="form-label">Club Number</label>
                     <input type="number" class="form-control" id="club_no" name="club_no" min="1">
                 </div>
-                <div class="mb-3">
-                    <label class="form-label">Grades Eligible</label>
-                    <div class="form-check">
-                        <input class="form-check-input" type="radio" name="grade_mode" id="all_grades" value="all" checked>
-                        <label class="form-check-label" for="all_grades">
-                            All grades
-                        </label>
-                    </div>
-                    <div class="form-check mb-2">
-                        <input class="form-check-input" type="radio" name="grade_mode" id="select_grades" value="select">
-                        <label class="form-check-label" for="select_grades">
-                            Select specific grades
-                        </label>
-                    </div>
-                    <div id="grade-checkboxes" class="d-none ms-3 mt-2">
-                        {% for i in range(1, 13) %}
-                        <div class="form-check form-check-inline">
-                            <input class="form-check-input" type="checkbox" name="grades_eligible" value="{{ i }}">
-                            <label class="form-check-label">{{ i }}</label>
-                        </div>
-                        {% endfor %}
-                    </div>
-                </div>
-                
-                <div class="mb-3">
-                    <label class="form-label">Ages Eligible</label>
-
-                    <div class="row g-2">
-                        <div class="col">
-                            <input type="number"
-                                class="form-control"
-                                name="age_min"
-                                min="5"
-                                max="25"
-                                placeholder="Min age">
-                        </div>
-
-                        <div class="col">
-                            <input type="number"
-                                class="form-control"
-                                name="age_max"
-                                min="5"
-                                max="25"
-                                placeholder="Max age">
-                        </div>
-                    </div>
-
-                    <small class="form-text text-muted">
-                        Leave any/both empty for different restrictions
-                    </small>
-                </div>
-                
-                <div class="mb-3">
-                    <label for="gender" class="form-label">Gender</label>
-                    <select class="form-select" id="gender" name="gender">
-                        <option value="A">All Genders</option>
-                        <option value="G">Girls Only</option>
-                        <option value="B">Boys Only</option>
-                    </select>
-                </div>
-
-                <div class="mb-3">
-                    <label for="last_registration_date" class="form-label">Last Registration Date</label>
-                    <input type="date" class="form-control" id="last_registration_date" name="last_registration_date" required>
-                </div>
-
-                <div class="mb-3">
-                    <label for="event_date" class="form-label">Event Date</label>
-                    <input type="date" class="form-control" id="event_date" name="event_date" required>
-                </div>
-                
-                <div class="mb-3" id="main_event_group">
-                    <label for="main_event" class="form-label">Main Event (if this is a sub-event)</label>
-                    <select class="form-select" id="main_event" name="main_event">
-                        <option value="">None (standalone event)</option>
-                        {% for main_event in main_events %}
-                        <option value="{{ main_event }}">{{ main_event }}</option>
-                        {% endfor %}
-                    </select>
-                    <small class="form-text text-muted">Or enter a new main event name:</small>
-                    <input type="text" class="form-control mt-2" id="main_event_new" name="main_event_new" 
-                        placeholder="Enter new main event name">
-                </div>
-
-                <div class="mb-3">
-                    <label for="event_summary" class="form-label">Event Summary</label>
-                    <textarea class="form-control" id="event_summary" name="event_summary" rows="3"></textarea>
-                </div>
-                
-                <button type="submit" class="btn btn-primary btn-custom">
-                    <i class="bi bi-check-circle"></i> Create Event
-                </button>
-                <a href="{{ url_for('dashboard') }}" class="btn btn-secondary btn-custom">
-                    <i class="bi bi-x-circle"></i> Cancel
-                </a>
-            </form>
+            </div>
         </div>
+        <div class="form-section">
+            <h5 class="section-title">Eligibility</h5>
+
+            <label class="form-label mb-2">Grades</label>
+
+            <div class="form-check">
+                <input class="form-check-input" type="radio" name="grade_mode" value="all" checked>
+                <label class="form-check-label">All grades</label>
+            </div>
+
+            <div class="form-check mb-2">
+                <input class="form-check-input" type="radio" name="grade_mode" value="select">
+                <label class="form-check-label">Select specific grades</label>
+            </div>
+
+            <div id="grade-checkboxes" class="d-none ms-3 mt-2">
+                {% for i in range(1, 13) %}
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="checkbox" name="grades_eligible" value="{{ i }}">
+                    <label class="form-check-label">{{ i }}</label>
+                </div>
+                {% endfor %}
+            </div>
+
+    <div class="mb-3">
+                <br>
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label">Min Age</label>
+                        <input type="number" class="form-control" name="age_min">
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label">Max Age</label>
+                        <input type="number" class="form-control" name="age_max">
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label">Gender</label>
+                        <select class="form-select" name="gender">
+                            <option value="A">All Genders</option>
+                            <option value="G">Girls Only</option>
+                            <option value="B">Boys Only</option>
+                        </select>
+                    </div>
+                </div>
+
+                <small class="text-muted d-block mt-1">
+                    Leave age fields empty to allow all ages.
+                </small>
+            </div>
+
+        </div>
+        <div class="form-section">
+            <h5 class="section-title">Dates</h5>
+
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Last Registration Date</label>
+                    <input type="date" class="form-control" name="last_registration_date" required>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Event Date</label>
+                    <input type="date" class="form-control" name="event_date" required>
+                </div>
+            </div>
+        </div>
+        <div class="form-section">
+            <h5 class="section-title">Event Grouping</h5>
+
+            <select class="form-select mb-2" name="main_event">
+                <option value="">Standalone event</option>
+                {% for main_event in main_events %}
+                <option value="{{ main_event }}">{{ main_event }}</option>
+                {% endfor %}
+            </select>
+
+            <input type="text" class="form-control" name="main_event_new"
+                   placeholder="Or enter a new main event name">
+        </div>
+        <div class="form-section">
+            <h5 class="section-title">Summary</h5>
+            <textarea class="form-control" name="event_summary" rows="3"
+                      placeholder="Short description of the event"></textarea>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary px-4">
+                <i class="bi bi-check-circle"></i> Create Event
+            </button>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">
+                Cancel
+            </a>
+        </div>
+
+    </form>
+</div>
+
     </div>
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const eventType = document.getElementById('event_type');
-        const clubNoGroup = document.getElementById('club_no_group');
-        const clubNoInput = document.getElementById('club_no');
-        if (!eventType) return;
-
+document.addEventListener("DOMContentLoaded", function () {
+    const eventType = document.getElementById('event_type');
+    const clubNoGroup = document.getElementById('club_no_group');
+    const clubNoInput = document.getElementById('club_no');
+    if (eventType && clubNoGroup && clubNoInput) {
         eventType.addEventListener('change', function () {
             if (this.value === 'interhouse') {
                 clubNoGroup.style.display = 'block';
@@ -150,29 +157,35 @@
                 clubNoInput.value = '';
             }
         });
-    });
-
-    document.getElementById('main_event_new').addEventListener('input', function() {
-        if (this.value.trim()) {
-            document.getElementById('main_event').value = '';
-        }
-    });
-
-    document.getElementById('main_event').addEventListener('change', function() {
-        if (this.value) {
-            document.getElementById('main_event_new').value = '';
-        }
-    });
-
-    const allGrades = document.getElementById('all_grades');
-    const selectGrades = document.getElementById('select_grades');
-    const checkboxes = document.getElementById('grade-checkboxes');
-
-    function toggleGrades() {
-        checkboxes.classList.toggle('d-none', allGrades.checked);
     }
 
-    allGrades.addEventListener('change', toggleGrades);
-    selectGrades.addEventListener('change', toggleGrades);
+    const mainEventNew = document.getElementById('main_event_new');
+    const mainEvent = document.getElementById('main_event');
+    if (mainEventNew && mainEvent) {
+        mainEventNew.addEventListener('input', function () {
+            if (this.value.trim()) {
+                mainEvent.value = '';
+            }
+        });
+
+        mainEvent.addEventListener('change', function () {
+            if (this.value) {
+                mainEventNew.value = '';
+            }
+        });
+    }
+
+    const gradeBox = document.getElementById("grade-checkboxes");
+    const gradeRadios = document.querySelectorAll('input[name="grade_mode"]');
+    if (gradeBox && gradeRadios.length) {
+        gradeRadios.forEach(radio => {
+            radio.addEventListener("change", function () {
+                gradeBox.classList.toggle("d-none", this.value !== "select");
+            });
+        });
+    }
+
+});
 </script>
+
 {% endblock %}
