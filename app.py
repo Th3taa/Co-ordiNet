@@ -2,10 +2,10 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 import mysql.connector
 from mysql.connector import Error
 from functools import wraps
-from datetime import datetime
+from datetime import datetime, date
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
-from utils import Event_ID_IH, Event_ID_IS, age_from_dob
+from utils import Event_ID_IH, Event_ID_IS, age_from_dob, tgt_name
 
 
 app = Flask(__name__)
@@ -31,6 +31,28 @@ def get_db_connection():
 
 def get_db_cursor(connection):
     return connection.cursor(dictionary=True)
+
+def get_club_number(club_id):
+    if not club_id:
+        return None
+
+    connection = get_db_connection()
+    cursor = get_db_cursor(connection)
+
+    try:
+        cursor.execute("SELECT club_no FROM clubs WHERE club_id = %s", (club_id,))
+        result = cursor.fetchone()
+        if result:
+            return result['club_no']
+        else:
+            cursor.execute("SELECT MAX(club_no) as max FROM clubs")
+            max_result = cursor.fetchone()
+            max_no = max_result['max'] or 0
+            cursor.execute("INSERT INTO clubs (club_id, club_no) VALUES (%s, %s)", (club_id, max_no + 1))
+            return max_no + 1
+    finally:
+        cursor.close()
+        connection.close()
 
 
 def login_required(f):
@@ -71,7 +93,6 @@ def login():
         connection = get_db_connection()
         cursor = get_db_cursor(connection)
         try:
-            # Join Users with Students to get all necessary information
             cursor.execute("""
                 SELECT u.student_id, u.email, u.password, u.position,
                        s.name, s.grade, s.gender, s.house, s.club_id
@@ -107,24 +128,26 @@ def login():
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
-        name = request.form.get('name')
+        first_name = request.form.get('first-name')
+        middle_name = request.form.get('middle-name', None)
+        last_name = request.form.get('last-name')
         grade = int(request.form.get('grade'))
         section = request.form.get('section')
-        birthdate = request.form.get('birthdate')
-        gender = request.form.get('gender')
         email = request.form.get('email')
         password = request.form.get('password')
         
         hashed_password = ph.hash(password)
         
+        name=tgt_name(first_name,  middle_name, last_name)
+
         connection = get_db_connection()
         cursor = get_db_cursor(connection)
         try:
             cursor.execute("""
                 SELECT student_id, position FROM students 
-                WHERE name = %s AND grade = %s AND section = %s AND birthdate = %s AND gender = %s AND email = %s
+                WHERE name = %s AND grade = %s AND section = %s AND email = %s
             """,
-            (name, grade, section, birthdate, gender, email))
+            (name, grade, section, email))
             student = cursor.fetchone()
             
             if not student:
@@ -219,12 +242,26 @@ def register_event(event_id):
                 return redirect(url_for('dashboard'))
 
         if event['ages_eligible']:
-            eligible_ages = [int(a) for a in event['ages_eligible'].split(',') if a.strip()]
-            birthdate = datetime.strptime(session.get('birthdate', '2000-01-01'), '%Y-%m-%d').date()
+            age_rule = event['ages_eligible']
+            birthdate = datetime.strptime(
+                session.get('birthdate', '2000-01-01'),
+                '%Y-%m-%d'
+            ).date()
             age = age_from_dob(birthdate)
-            if age not in eligible_ages:
+            eligible = True
+            if '-' in age_rule:
+                min_age, max_age = map(int, age_rule.split('-'))
+                eligible = min_age <= age <= max_age
+            elif age_rule.endswith('+'):
+                min_age = int(age_rule[:-1])
+                eligible = age >= min_age
+            elif age_rule.startswith('≤'):
+                max_age = int(age_rule[1:])
+                eligible = age <= max_age
+            if not eligible:
                 flash('You are not eligible for this event based on your age', 'error')
                 return redirect(url_for('dashboard'))
+
         
         if event['gender'] and event['gender'] != 'A':
             if event['gender'] == 'G' and session['gender'] != 'G':
@@ -247,8 +284,6 @@ def register_event(event_id):
         cursor.close()
         connection.close()
 
-    return redirect(url_for('dashboard'))
-
 @app.route('/event/unregister/<event_id>', methods=['POST'])
 @login_required
 def unregister_event(event_id):
@@ -268,7 +303,7 @@ def unregister_event(event_id):
 @login_required
 def create_event():
     position = session.get('position', 'none')
-    student_id = session.get('user_id')
+    club_id = session.get('club_id', None)
     
     if position not in ['event_coordinator', 'club_leader', 'prefect']:
         flash('You do not have permission to create events', 'error')
@@ -277,31 +312,43 @@ def create_event():
     if request.method == 'POST':
         event_name = request.form.get('event_name')
         event_type = request.form.get('event_type')
-        grades_eligible = request.form.get('grades_eligible', '')
-        ages_eligible = request.form.get('ages_eligible', '')
+        grade_mode = request.form.get('grade_mode')
+        age_min = request.form.get('age_min')
+        age_max = request.form.get('age_max')
         gender = request.form.get('gender', 'A')
         last_registration_date = request.form.get('last_registration_date', '')
         event_date = request.form.get('event_date', '')
         main_event = request.form.get('main_event', '')
         main_event_new = request.form.get('main_event_new', '').strip()
-        created_by = student_id
-        club_no = request.form.get('club_no', '').strip()
+        created_by = session.get('user_id')
+        club_id = club_id if position == 'club_leader' else None
         event_summary = request.form.get('event_summary', '')
         
+        if age_min and age_max and int(age_min) > int(age_max):
+            flash("Minimum age cannot be greater than maximum age", "error")
+            return redirect(url_for('create_event'))
+
+        last_reg = datetime.strptime(last_registration_date, '%Y-%m-%d').date()
+        event_day = datetime.strptime(event_date, '%Y-%m-%d').date()
+        today = date.today()
+
+        if event_day < today or last_reg < today or last_reg > event_day:
+            flash('Invalid event or registration date', 'error')
+            return redirect(url_for('create_event'))
+
         if main_event_new:
             main_event = main_event_new
         
         connection = get_db_connection()
         cursor = get_db_cursor(connection)
         try:
-            club_id = None
             if event_type == 'interhouse':
                 if position not in ['club_leader', 'prefect']:
                     flash('Only Club Leaders and Prefects can create interhouse events', 'error')
                     return redirect(url_for('create_event'))
                 
-                if not club_no:
-                    flash('Club number is required for interhouse events', 'error')
+                if not club_id:
+                    flash('Club id is required for interhouse events', 'error')
                     return redirect(url_for('create_event'))
                 
                 if position == 'club_leader':
@@ -309,18 +356,34 @@ def create_event():
                     if not club_id:
                         flash('You must be assigned to a club to create interhouse events', 'error')
                         return redirect(url_for('create_event'))
-                
-                if grades_eligible:
-                    grade_list = [int(g.strip()) for g in grades_eligible.split(',')]
-                    grade_set = set(grade_list)
-                    event_id = Event_ID_IH(int(club_no), grade_set, gender)
+                    
+                if grade_mode == 'all':
+                    grade_list = list(range(1, 13))
                 else:
-                    event_id = Event_ID_IH(int(club_no), set(range(1, 13)), gender)
+                    grades = request.form.getlist("grades_eligible")
+                    grade_list = [int(g) for g in grades]
+
+                grades_eligible = ",".join(map(str, grade_list))
+                club_no = get_club_number(club_id)
+                event_id = Event_ID_IH(int(club_no), set(grade_list), gender)
+
+                if age_min and age_max:
+                    ages_eligible = f"{age_min}-{age_max}"
+                elif age_min:
+                    ages_eligible = f"{age_min}+"
+                elif age_max:
+                    ages_eligible = f"≤{age_max}"
+                else:
+                    ages_eligible = None
             
             else:
                 cursor.execute("SELECT COUNT(*) as count FROM events WHERE event_id LIKE 'IS%'")
                 count = cursor.fetchone()['count']
                 next_no = count + 1
+
+                if position not in ['club_leader', 'prefect', 'event_coordinator']:
+                    flash('Only Club Leaders, Prefects, and Event Coordinators can create interhouse events', 'error')
+                    return redirect(url_for('create_event'))
                 
                 if position == 'club_leader':
                     club_id = session.get('club_id')
@@ -328,13 +391,21 @@ def create_event():
                         flash('You must be assigned to a club to create interschool events', 'error')
                         return redirect(url_for('create_event'))
                 
-                if grades_eligible:
-                    grade_list = [int(g.strip()) for g in grades_eligible.split(',')]
-                else:
+                if grade_mode=='all':
                     grade_list = list(range(1, 13))
-                
+                else:
+                    grades=request.form.getlist("grades_eligible")
+                    grade_list = [int(g) for g in grades]
+                grades_eligible = ",".join(map(str, grade_list))
+                if age_min and age_max:
+                    ages_eligible = f"{age_min}-{age_max}"
+                elif age_min:
+                    ages_eligible = f"{age_min}+"
+                elif age_max:
+                    ages_eligible = f"≤{age_max}"
+                else:
+                    ages_eligible = None
                 event_id = Event_ID_IS(next_no, grade_list, gender, main_event if main_event else None)
-            
             cursor.execute("""
                 INSERT INTO events (event_id, event_name, event_type, grades_eligible, ages_eligible, gender, last_registration_date, event_date, main_event, club_id, created_by, event_summary)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
@@ -388,7 +459,7 @@ def manage_event(event_id):
             can_manage = True
         elif position == 'event_coordinator' and event['event_type'] == 'interschool':
             can_manage = True
-        elif position == 'club_leader' and user_id == event['created_by'] and event.get('club_id') == user_club_id:
+        elif position == 'club_leader' and event.get('club_id') == user_club_id:
             can_manage = True
 
         if not can_manage:
@@ -452,7 +523,7 @@ def add_student_to_event(event_id):
             can_manage = True
         elif position == 'event_coordinator' and event['event_type'] == 'interschool':
             can_manage = True
-        elif position == 'club_leader' and user_id == event['created_by'] and event.get('club_id') == user_club_id:
+        elif position == 'club_leader' and event.get('club_id') == user_club_id:
             can_manage = True
 
         if not can_manage:
@@ -471,6 +542,46 @@ def add_student_to_event(event_id):
         if cursor.fetchone():
             flash('Student is already registered for this event', 'info')
             return redirect(url_for('manage_event', event_id=event_id))
+        
+        cursor.execute("SELECT * FROM students WHERE student_id = %s", (student_id,))
+        student = cursor.fetchone()
+
+        if not student:
+            flash('Student not found', 'error')
+            return redirect(url_for('manage_event', event_id=event_id))
+        
+        if event['grades_eligible']:
+            eligible_grades = [int(g) for g in event['grades_eligible'].split(',') if g.strip()]
+            if student['grade'] not in eligible_grades:
+                flash('Student is not eligible for this event based on grade', 'error')
+                return redirect(url_for('manage_event', event_id=event_id))
+            
+        if event['ages_eligible']:
+            age_rule = event['ages_eligible']
+            birthdate = student.get('birthdate')
+            if not birthdate:
+                flash('Student birthdate not found, cannot verify age eligibility', 'error')
+                return redirect(url_for('manage_event', event_id=event_id))
+            birthdate = datetime.strptime(birthdate, '%Y-%m-%d').date()
+            age = age_from_dob(birthdate)
+            eligible = True
+            if '-' in age_rule:
+                min_age, max_age = map(int, age_rule.split('-'))
+                eligible = min_age <= age <= max_age
+            elif age_rule.endswith('+'):
+                min_age = int(age_rule[:-1])
+                eligible = age >= min_age
+            elif age_rule.startswith('≤'):
+                max_age = int(age_rule[1:])
+                eligible = age <= max_age
+            if not eligible:
+                flash('Student is not eligible for this event based on age', 'error')
+                return redirect(url_for('manage_event', event_id=event_id))
+            
+        if event['gender'] and event['gender'] != 'A':
+            if event['gender'] != student['gender']:
+                flash('Student is not eligible for this event based on gender', 'error')
+                return redirect(url_for('manage_event', event_id=event_id))
         
         cursor.execute("INSERT INTO registrations (student_id, event_id) VALUES (%s, %s)",
                     (student_id, event_id))
@@ -508,7 +619,7 @@ def remove_student_from_event(event_id):
             can_manage = True
         elif position == 'event_coordinator' and event['event_type'] == 'interschool':
             can_manage = True
-        elif position == 'club_leader' and user_id == event['created_by'] and event.get('club_id') == user_club_id:
+        elif position == 'club_leader' and event.get('club_id') == user_club_id:
             can_manage = True
         
         if not can_manage:
@@ -584,6 +695,34 @@ def search_students():
         cursor.close()
         connection.close()
 
+@app.route('/event/<event_id>/delete', methods=['POST'])
+@login_required
+def delete_event(event_id):
+    if session.get('position') not in ['event_coordinator', 'club_leader', 'prefect']:
+        flash('You do not have permission to delete this event.', 'error')
+        return redirect(url_for('dashboard'))
+
+    connection = get_db_connection()
+    cursor = get_db_cursor(connection)
+
+    try:
+        cursor.execute("SELECT * FROM events WHERE event_id = %s", (event_id,))
+        event = cursor.fetchone()
+        if not event:
+            flash('Event not found.', 'error')
+            return redirect(url_for('dashboard'))
+        cursor.execute("DELETE FROM registrations WHERE event_id = %s", (event_id,))
+        cursor.execute("DELETE FROM events WHERE event_id = %s", (event_id,))
+        connection.commit()
+
+        flash(f"Event '{event['event_name']}' and all registrations have been deleted.", 'success')
+        return redirect(url_for('dashboard'))
+
+    finally:
+        cursor.close()
+        connection.close()
+
+
 @app.route('/event_summary/<event_id>')
 @login_required
 def event_summary(event_id):
@@ -607,16 +746,17 @@ def event_summary(event_id):
 @login_required
 def profile():
     connection = get_db_connection()
-    cursor = get_db_cursor(connection)
-    try:
-        cursor.execute(" SELECT * FROM students WHERE student_id = %s", (session['user_id'],))
-        student = cursor.fetchone()
-        birthdate = datetime.strptime(session.get('birthdate', '2000-01-01'), '%Y-%m-%d').date()
-        student['age'] = age_from_dob(birthdate)
-        return render_template('profile.html', student=student)
-    finally:
-        cursor.close()
-        connection.close()
+    cursor = connection.cursor(dictionary=True)
+    cursor.execute("SELECT * FROM students WHERE student_id = %s", (session['user_id'],))
+    student = cursor.fetchone()
+    cursor.close()
+    connection.close()
+    student['age'] = age_from_dob(student['birthdate']) if student.get('birthdate') else '-'
+
+    if not student:
+        flash("Student not found", "error")
+        return redirect(url_for('dashboard'))
+    return render_template('profile.html', student=student)
 
 @app.route('/calendar')
 @login_required
