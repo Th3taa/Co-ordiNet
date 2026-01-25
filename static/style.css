@@ -171,6 +171,45 @@ h4 {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
 }
 
+.btn-gradient {
+    background: linear-gradient(45deg, #FFE082, #FFCC80, #FFAB91);
+    color: black;
+    font-size: 1.15rem;
+    min-width: 200px;
+    padding: 0.8rem 5rem;
+    border-radius: 1.5rem;
+    border: none;
+    transition: transform 0.2s, box-shadow 0.2s;
+    cursor: pointer;
+}
+
+.btn-gradient:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+}
+.form-section {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+.section-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #9aa4b2;
+    margin-bottom: 1rem;
+}
+
+.form-actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+    margin-top: 2rem;
+}
 
 #vanta-bg {
     position: fixed;
