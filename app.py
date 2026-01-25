@@ -15,7 +15,7 @@ app.secret_key = '***'
 MYSQL_CONFIG = {
     'host': 'localhost',
     'user': 'root',
-    'password': '***',
+    'password': 'sql123',
     'database': 'student_events'
 }
 
@@ -71,7 +71,6 @@ def login():
         connection = get_db_connection()
         cursor = get_db_cursor(connection)
         try:
-            # Join Users with Students to get all necessary information
             cursor.execute("""
                 SELECT u.student_id, u.email, u.password, u.position,
                        s.name, s.grade, s.gender, s.house, s.club_id
@@ -628,6 +627,34 @@ def search_students():
         cursor.close()
         connection.close()
 
+@app.route('/event/<event_id>/delete', methods=['POST'])
+@login_required
+def delete_event(event_id):
+    if session.get('position') not in ['event_coordinator', 'club_leader', 'prefect']:
+        flash('You do not have permission to delete this event.', 'error')
+        return redirect(url_for('dashboard'))
+
+    connection = get_db_connection()
+    cursor = get_db_cursor(connection)
+
+    try:
+        cursor.execute("SELECT * FROM events WHERE event_id = %s", (event_id,))
+        event = cursor.fetchone()
+        if not event:
+            flash('Event not found.', 'error')
+            return redirect(url_for('dashboard'))
+        cursor.execute("DELETE FROM registrations WHERE event_id = %s", (event_id,))
+        cursor.execute("DELETE FROM events WHERE event_id = %s", (event_id,))
+        connection.commit()
+
+        flash(f"Event '{event['event_name']}' and all registrations have been deleted.", 'success')
+        return redirect(url_for('dashboard'))
+
+    finally:
+        cursor.close()
+        connection.close()
+
+
 @app.route('/event_summary/<event_id>')
 @login_required
 def event_summary(event_id):
@@ -651,16 +678,16 @@ def event_summary(event_id):
 @login_required
 def profile():
     connection = get_db_connection()
-    cursor = get_db_cursor(connection)
-    try:
-        cursor.execute(" SELECT * FROM students WHERE student_id = %s", (session['user_id'],))
-        student = cursor.fetchone()
-        birthdate = datetime.strptime(session.get('birthdate', '2000-01-01'), '%Y-%m-%d').date()
-        student['age'] = age_from_dob(birthdate)
-        return render_template('profile.html', student=student)
-    finally:
-        cursor.close()
-        connection.close()
+    cursor = connection.cursor(dictionary=True)
+    cursor.execute("SELECT * FROM students WHERE student_id = %s", (session['user_id'],))
+    student = cursor.fetchone()
+    cursor.close()
+    connection.close()
+
+    if not student:
+        flash("Student not found", "error")
+        return redirect(url_for('dashboard'))
+    return render_template('profile.html', student=student)
 
 @app.route('/calendar')
 @login_required
@@ -704,5 +731,4 @@ def event_search():
         connection.close()
 
 if __name__ == '__main__':
-
     app.run(port=5001,debug=True)
