@@ -15,4 +15,4 @@ VALUES
 
 INSERT INTO admin (name, email, password, otp_secret)
 VALUES 
-('Orange Juice', 'orange@admin.com', '$argon2id$v=19$m=65536,t=3,p=4$77yz5MyWcIs/LOyuI69Hjg$Y7iM4SxvzDlYY/8Av2flu2QWT0uT2ekIbJm736l1WQU', 'check'),
+('Orange Juice', 'orange@admin.com', '$argon2id$v=19$m=65536,t=3,p=4$77yz5MyWcIs/LOyuI69Hjg$Y7iM4SxvzDlYY/8Av2flu2QWT0uT2ekIbJm736l1WQU', 'check')

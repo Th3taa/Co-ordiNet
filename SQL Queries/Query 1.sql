@@ -5,7 +5,7 @@ USE student_events;
 
 -- Students table. Holds Student ID(Primary Key), Name, Grade, Section, Birthdate, Gender, Email and Position (if exists)
 CREATE TABLE IF NOT EXISTS students (
-		student_id INT PRIMARY KEY,
+		student_id INT AUTO_INCREMENT PRIMARY KEY,
 		name VARCHAR(100) NOT NULL,
 		grade INT NOT NULL,
 		section VARCHAR(10) NOT NULL,
@@ -67,5 +67,5 @@ CREATE TABLE IF NOT EXISTS admin (
 
 CREATE TABLE IF NOT EXISTS clubs (
 		club_id VARCHAR(100) PRIMARY KEY,
-		club_name VARCHAR(200) NOT NULL,
+		club_name VARCHAR(200) NOT NULL
 	);
