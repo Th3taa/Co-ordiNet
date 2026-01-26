@@ -40,16 +40,18 @@ def get_club_number(club_id):
     cursor = get_db_cursor(connection)
 
     try:
-        cursor.execute("SELECT club_no FROM clubs WHERE club_id = %s", (club_id,))
+        cursor.execute("SELECT club_id FROM clubs WHERE club_id = %s", (club_id,))
         result = cursor.fetchone()
         if result:
-            return result['club_no']
+            return int(result['club_id'])
         else:
-            cursor.execute("SELECT MAX(club_no) as max FROM clubs")
+            cursor.execute("SELECT club_id FROM clubs ORDER BY club_id DESC LIMIT 1")
             max_result = cursor.fetchone()
-            max_no = max_result['max'] or 0
-            cursor.execute("INSERT INTO clubs (club_id, club_no) VALUES (%s, %s)", (club_id, max_no + 1))
+            max_no = int(max_result['club_id'] or 0)
+            cursor.execute("INSERT INTO clubs (club_name, club_id) VALUES (%s, %s)", (club_id, max_no + 1))
             return max_no + 1
+    except Exception as e:
+        flash(f"Error retrieving club number: {e}", "error")
     finally:
         cursor.close()
         connection.close()

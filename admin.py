@@ -7,7 +7,7 @@ from argon2.exceptions import VerifyMismatchError
 from utils import email_create
 import pandas as pd
 import pyotp
-from utils import email_create, tgt_name
+from utils import email_create, tgt_name, name_parts
 
 app = Flask(__name__)
 app.secret_key = '***'
@@ -267,9 +267,20 @@ def update_student(student_id):
         connection = get_db_connection()
         cursor = get_db_cursor(connection)
 
+        try:
+            cursor.execute("SELECT NAME FROM students WHERE student_id = %s", (student_id,))
+            student = cursor.fetchone()
+            first, middle, last = name_parts(student['NAME'])
+        except Error as e:
+            flash(f'Error fetching student data: {e}', 'error')
+            return redirect(url_for('manage_students'))
+
         first_name = request.form.get('first-name', '')
+        first_name = first_name if first_name else first
         middle_name = request.form.get('middle-name', None)
+        middle_name = middle_name if middle_name else middle
         last_name = request.form.get('last-name', '')
+        last_name = last_name if last_name else last
         name = tgt_name(first_name, middle_name, last_name)
         grade = request.form.get('grade', None)
         section = request.form.get('section', None)
@@ -282,7 +293,7 @@ def update_student(student_id):
         try:
 
             if name:
-                cursor.execute("UPDATE students SET name=%s WHERE student_id=%s", (name, student_id))
+                cursor.execute("UPDATE students SET name=%s WHERE student_id=%s", (name, student_id)) 
             if grade:
                 cursor.execute("UPDATE students SET grade=%s WHERE student_id=%s", (grade, student_id))
             if section:
