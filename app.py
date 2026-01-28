@@ -213,13 +213,13 @@ def dashboard():
         cursor.execute("""
             SELECT e.*, 
                    COUNT(r.student_id) as registered_count,
-                   CASE WHEN R.student_id IS NOT NULL THEN 1 ELSE 0 END as is_registered
+                   CASE WHEN r2.student_id IS NOT NULL THEN 1 ELSE 0 END as is_registered
             FROM events e
             LEFT JOIN registrations r ON e.event_id = r.event_id
-            LEFT JOIN registrations R ON e.event_id = R.event_id AND R.student_id = %s
+            LEFT JOIN registrations r2 ON e.event_id = r2.event_id AND r2.student_id = %s
+            WHERE e.event_date >= CURDATE()
             GROUP BY e.event_id
             ORDER BY e.created_at DESC
-            WHERE e.event_date >= CURDATE()
         """,
         (session['user_id'],))
         events = cursor.fetchall()
