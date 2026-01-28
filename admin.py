@@ -32,16 +32,6 @@ def get_db_connection():
 def get_db_cursor(connection):
     return connection.cursor(dictionary=True)
 
-def get_next_student_id():
-    connection = get_db_connection()
-    cursor = get_db_cursor(connection)
-    try:
-        cursor.execute("SELECT MAX(student_id) AS max FROM students")
-        result = cursor.fetchone()
-        return (result['max'] or 0) + 1
-    finally:
-        cursor.close()
-        connection.close()
 
 def login_required(f):
     @wraps(f)
@@ -60,6 +50,7 @@ def index():
 @app.route('/login', methods=['GET','POST'])
 def login():
     if request.method == 'POST':
+        #Get email and password from html to verify
         email = request.form.get('email')
         password = request.form.get('password')
 
@@ -71,6 +62,8 @@ def login():
 
             if admin:
                 try:
+                    #Verify password with stored hash
+                    #If valid, generate or retrieve OTP secret and send code
                     ph.verify(admin['password'], password)
                     user_secret = None
 
@@ -84,11 +77,12 @@ def login():
                     session['temp_admin_secret'] = user_secret
                     session['temp_admin_email'] = email
                     
+                    #Generate Code using pyotp
                     totp = pyotp.TOTP(user_secret.upper(), interval=600)
                     current_code = totp.now()
                                         
                     print(f"Login code for : {current_code}")
-                    flash(f'{current_code}', 'info')
+                    #flash(f'{current_code}', 'info')
                     
                     return redirect(url_for('verify_otp'))
                 
@@ -110,9 +104,11 @@ def verify_otp():
         return redirect(url_for('login'))
 
     if request.method == 'POST':
+        #Get OTP code from user and verify
         user_code = request.form.get('otp_code')
         user_secret = session.get('temp_admin_secret')
         
+        #using same user secret to verify code
         totp = pyotp.TOTP(user_secret, interval=600)
         
         if totp.verify(user_code):
@@ -135,8 +131,10 @@ def add_student():
         connection = get_db_connection()
         cursor = get_db_cursor(connection)
 
+        #Get student details from form
         first_name = request.form.get('first-name')
         middle_name = request.form.get('middle-name')
+        middle_name = middle_name if middle_name else None
         last_name = request.form.get('last-name')
         name = tgt_name(first_name, middle_name, last_name)
         grade = request.form.get('grade')
@@ -148,15 +146,20 @@ def add_student():
         club = request.form.get('club', None)
 
         try:
-            cursor.execute("SELECT student_id FROM students ORDER BY student_id DESC LIMIT 1")
-            last_id = cursor.fetchone()
-            student_id = last_id['student_id'] + 1 if last_id else 1
-            email = email_create(name, student_id)
-
+            email = '***'  # Placeholder for email generation logic
+            #Insert new student into database
             cursor.execute("""
                 INSERT INTO students (name, grade, section, birthdate, gender, email, club_id, position)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             """, (name, grade, section, date_of_birth, gender, email, club, position))
+            connection.commit()
+            #Get student again now with student_id
+            cursor.execute("SELECT LAST_INSERT_ID() AS student_id")
+            student = cursor.fetchone()
+            student_id = student['student_id']
+            email = email_create(name, student_id)
+            #Create email and update student record
+            cursor.execute("UPDATE students SET email = %s WHERE student_id = %s", (email, student_id))
             connection.commit()
 
             flash('Student added successfully', 'success')
@@ -199,6 +202,7 @@ def remove_student(student_id):
         cursor = get_db_cursor(connection)
 
         try:
+            #Delete student from all students, users and registrations tables
             cursor.execute("DELETE FROM students WHERE student_id = %s", (student_id,))
             cursor.execute("DELETE FROM users WHERE student_id = %s", (student_id,))
             cursor.execute("DELETE FROM registrations WHERE student_id = %s", (student_id,))
@@ -224,10 +228,12 @@ def new_academic_session():
     connection = get_db_connection()
     cursor = get_db_cursor(connection)
 
+    #Get grade 12 students to remove
     cursor.execute("SELECT student_id FROM students WHERE grade = 12")
     GR12 = cursor.fetchall()
 
     try:
+        #Delete grade 12 students from all tables
         for student in GR12:
             cursor.execute("DELETE FROM users WHERE student_id = %s", (student['student_id'],))
             cursor.execute("DELETE FROM registrations WHERE student_id = %s", (student['student_id'],))
@@ -239,6 +245,7 @@ def new_academic_session():
         return redirect(url_for('admin_dashboard'))
     
     try:
+        #Increment grade of all other students by 1
         cursor.execute("UPDATE students SET grade = grade + 1 WHERE grade < 12")
         connection.commit()
         flash('Academic session updated successfully', 'success')
@@ -268,6 +275,7 @@ def update_student(student_id):
         cursor = get_db_cursor(connection)
 
         try:
+            #Get name parts of existing student
             cursor.execute("SELECT NAME FROM students WHERE student_id = %s", (student_id,))
             student = cursor.fetchone()
             first, middle, last = name_parts(student['NAME'])
@@ -275,6 +283,7 @@ def update_student(student_id):
             flash(f'Error fetching student data: {e}', 'error')
             return redirect(url_for('manage_students'))
 
+        #Get updated details from form, use existing if not provided
         first_name = request.form.get('first-name', '')
         first_name = first_name if first_name else first
         middle_name = request.form.get('middle-name', None)
@@ -291,7 +300,7 @@ def update_student(student_id):
         club_id = request.form.get('club', None)
 
         try:
-
+            #Update only provided fields in database
             if name:
                 cursor.execute("UPDATE students SET name=%s WHERE student_id=%s", (name, student_id)) 
             if grade:
@@ -377,6 +386,7 @@ def update_students_xlsx():
 @app.route('/search_students')
 @login_required
 def search_students():
+    #Get search query from request
     query = request.args.get('q', '')
     connection = get_db_connection()
     cursor = get_db_cursor(connection)
