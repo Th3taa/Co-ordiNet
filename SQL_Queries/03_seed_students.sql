@@ -1,0 +1,27 @@
+USE co_ordinet;
+
+INSERT INTO students (student_id, name, grade, section, birthdate, gender, email, house, position, club_id) VALUES
+(1001, 'Aarav Sharma', 10, 'A', '2010-04-12', 'M', 'aarav1001@school.com', 'Pioneers', 'none', NULL),
+(1002, 'Diya Patel', 10, 'B', '2010-08-19', 'F', 'diya1002@school.com', 'Challengers', 'house_captain', NULL),
+(1003, 'Kabir Singh', 11, 'A', '2009-02-14', 'M', 'kabir1003@school.com', 'Explorers', 'event_coordinator', NULL),
+(1004, 'Meera Nair', 12, 'C', '2008-11-03', 'F', 'meera1004@school.com', 'Voyagers', 'prefect', NULL),
+(1005, 'Riya Gupta', 9, 'A', '2011-06-21', 'F', 'riya1005@school.com', 'Pioneers', 'club_leader', 1),
+(1006, 'Vihaan Das', 8, 'B', '2012-01-09', 'M', 'vihaan1006@school.com', 'Challengers', 'none', NULL),
+(1007, 'Ananya Iyer', 7, 'A', '2013-03-16', 'F', 'ananya1007@school.com', 'Explorers', 'none', NULL),
+(1008, 'Arjun Verma', 12, 'B', '2008-05-28', 'M', 'arjun1008@school.com', 'Pioneers', 'house_captain', NULL),
+(1009, 'Sana Khan', 11, 'C', '2009-09-07', 'F', 'sana1009@school.com', 'Challengers', 'event_coordinator', NULL),
+(1010, 'Ishaan Roy', 10, 'A', '2010-12-01', 'M', 'ishaan1010@school.com', 'Voyagers', 'none', NULL),
+(1011, 'Tara Menon', 9, 'B', '2011-02-24', 'F', 'tara1011@school.com', 'Explorers', 'club_leader', 2),
+(1012, 'Advait Rao', 6, 'A', '2014-07-15', 'M', 'advait1012@school.com', 'Pioneers', 'none', NULL),
+(1013, 'Nisha Kapoor', 8, 'C', '2012-10-30', 'F', 'nisha1013@school.com', 'Challengers', 'none', NULL),
+(1014, 'Reyansh Jain', 11, 'B', '2009-01-18', 'M', 'reyansh1014@school.com', 'Explorers', 'none', NULL),
+(1015, 'Kiara Bose', 12, 'A', '2008-06-09', 'F', 'kiara1015@school.com', 'Voyagers', 'prefect', NULL),
+(1016, 'Ayaan Ali', 7, 'B', '2013-11-12', 'M', 'ayaan1016@school.com', 'Pioneers', 'none', NULL),
+(1017, 'Ira Chawla', 5, 'A', '2015-04-05', 'F', 'ira1017@school.com', 'Challengers', 'none', NULL),
+(1018, 'Manav Bhat', 9, 'C', '2011-08-27', 'M', 'manav1018@school.com', 'Explorers', 'none', NULL),
+(1019, 'Aditi Sen', 10, 'B', '2010-02-11', 'F', 'aditi1019@school.com', 'Voyagers', 'none', NULL),
+(1020, 'Neil Thomas', 6, 'B', '2014-09-22', 'M', 'neil1020@school.com', 'Pioneers', 'none', NULL),
+(1021, 'Sia Malhotra', 11, 'A', '2009-04-29', 'F', 'sia1021@school.com', 'Challengers', 'house_captain', NULL),
+(1022, 'Dev Kulkarni', 12, 'B', '2008-12-14', 'M', 'dev1022@school.com', 'Explorers', 'house_captain', NULL),
+(1023, 'Myra Joshi', 10, 'C', '2010-06-03', 'F', 'myra1023@school.com', 'Voyagers', 'house_captain', NULL),
+(1024, 'Rohan Sethi', 8, 'A', '2012-03-08', 'M', 'rohan1024@school.com', 'Pioneers', 'none', NULL);
