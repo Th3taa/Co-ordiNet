@@ -1,1 +1,326 @@
-*,*::before,*::after{box-sizing:border-box}html,body{margin:0;padding:0}body{min-height:100vh;font-family:'Segoe UI',system-ui,-apple-system,BlinkMacSystemFont,sans-serif;background:transparent;color:#111827;padding-top:80px}.navbar{position:fixed;top:0;width:100%;background:rgba(255,255,255,.25);backdrop-filter:blur(14px);border-bottom:1px solid rgba(255,255,255,.35);box-shadow:0 4px 18px rgba(0,0,0,.08);z-index:1000}.navbar-brand,.nav-link{color:#111827!important;font-weight:500}.page-wrapper{min-height:calc(100vh - 80px);padding:6rem 2rem 3rem;display:flex;justify-content:center;position:relative;z-index:10}.app-card{width:100%}.app-card.sm{max-width:720px}.app-card.lg{max-width:1100px}.main-container{background:#fff;border-radius:20px;padding:2.5rem;box-shadow:0 10px 30px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04)}h1,h2,h3,h4{letter-spacing:-.3px;margin-top:0}h2{font-size:1.6rem;font-weight:700}h4{font-size:1.1rem;font-weight:600}.text-muted{color:#6b7280!important;font-size:.85rem}.event-card{background:#fff;border-radius:16px;padding:1.5rem 1.75rem;margin-bottom:1.25rem;border:1px solid rgba(0,0,0,.06);box-shadow:0 12px 30px rgba(0,0,0,.06);transition:transform .2s ease,box-shadow .2s ease}.event-card:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(0,0,0,.12)}.event-header{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem}.event-title{margin:0;font-size:1.15rem;font-weight:600}.event-badges{display:flex;gap:.4rem;flex-wrap:wrap}.event-meta,.event-dates{display:flex;gap:1.4rem;flex-wrap:wrap;margin-top:.6rem;font-size:.82rem;color:#6b7280}.badge{border-radius:999px;padding:4px 10px;font-size:.75rem;font-weight:500}.event-actions{display:flex;gap:.6rem;margin-top:1.2rem;flex-wrap:wrap}.btn{border-radius:999px;font-weight:500;font-size:.8rem;padding:5px 14px;transition:background-color .15s ease,box-shadow .15s ease}.btn:hover{box-shadow:0 4px 12px rgba(0,0,0,.12)}.btn-gradient{background:linear-gradient(45deg,#ffe082,#ffcc80,#ffab91);color:#111827;font-size:1rem;min-width:180px;padding:.8rem 2rem;border-radius:1.5rem;border:none;cursor:pointer}.btn-gradient:hover{transform:translateY(-2px);box-shadow:0 4px 15px rgba(0,0,0,.15)}.form-section{background:#f8fafc;border:1px solid #e5e7eb;border-radius:14px;padding:1.25rem;margin-bottom:1.5rem}.section-title{font-size:.95rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:#6b7280;margin-bottom:1rem}.form-actions{display:flex;gap:.75rem;justify-content:center;margin-top:2rem}#vanta-bg{position:fixed;inset:0;z-index:-1}.detail-label{color:#6b7280;font-size:.8rem;text-transform:uppercase;letter-spacing:.04em}.detail-value{font-weight:600;margin-top:.15rem}.notification-card{border-left:4px solid #0dcaf0}.pending-card{border-left-color:#ffc107}.table td,.table th{vertical-align:middle}@media(max-width:576px){.page-wrapper{padding:5.5rem 1rem 2rem}.main-container{padding:1.4rem}.event-header{display:block}.event-badges{margin-top:.65rem}}
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  min-height: 100vh;
+  padding-top: 80px;
+  color: #111827;
+  background: transparent;
+  font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.navbar {
+  position: fixed;
+  top: 0;
+  z-index: 1000;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.25);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+  backdrop-filter: blur(14px);
+}
+
+.navbar-brand,
+.nav-link {
+  color: #111827 !important;
+  font-weight: 500;
+}
+
+.page-wrapper {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  min-height: calc(100vh - 80px);
+  padding: 6rem 2rem 3rem;
+  justify-content: center;
+}
+
+.app-card {
+  width: 100%;
+}
+
+.app-card.sm {
+  max-width: 720px;
+}
+
+.app-card.lg {
+  max-width: 1100px;
+}
+
+.main-container {
+  padding: 2.5rem;
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+h1,
+h2,
+h3,
+h4 {
+  margin-top: 0;
+  letter-spacing: -0.3px;
+}
+
+h2 {
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+
+h4 {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.text-muted {
+  color: #6b7280 !important;
+  font-size: 0.85rem;
+}
+
+.event-card {
+  margin-bottom: 1.25rem;
+  padding: 1.5rem 1.75rem;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 16px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.06);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.event-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+}
+
+.event-header {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.event-title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 600;
+}
+
+.event-badges {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.event-meta,
+.event-dates {
+  display: flex;
+  gap: 1.4rem;
+  margin-top: 0.6rem;
+  color: #6b7280;
+  font-size: 0.82rem;
+  flex-wrap: wrap;
+}
+
+.badge {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.event-actions {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 1.2rem;
+  flex-wrap: wrap;
+}
+
+.btn {
+  padding: 5px 14px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.btn:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.btn-gradient {
+  min-width: 180px;
+  padding: 0.8rem 2rem;
+  color: #111827;
+  background: linear-gradient(45deg, #ffe082, #ffcc80, #ffab91);
+  border: none;
+  border-radius: 1.5rem;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.btn-gradient:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+}
+
+.form-section {
+  margin-bottom: 1.5rem;
+  padding: 1.25rem;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+}
+
+.section-title {
+  margin-bottom: 1rem;
+  color: #6b7280;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.form-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 2rem;
+  justify-content: center;
+}
+
+#vanta-bg {
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+}
+
+.detail-label {
+  color: #6b7280;
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.detail-value {
+  margin-top: 0.15rem;
+  font-weight: 600;
+}
+
+.notification-card {
+  border-left: 4px solid #0dcaf0;
+}
+
+.pending-card {
+  border-left-color: #ffc107;
+}
+
+.table td,
+.table th {
+  vertical-align: middle;
+}
+
+.calendar-grid {
+  display: grid;
+  overflow: hidden;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  border-top: 1px solid #e5e7eb;
+  border-left: 1px solid #e5e7eb;
+  border-radius: 12px;
+}
+
+.calendar-heading {
+  padding: 0.7rem 0.4rem;
+  color: #4b5563;
+  background: #f3f4f6;
+  border-right: 1px solid #e5e7eb;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.calendar-day {
+  min-height: 125px;
+  padding: 0.55rem;
+  background: #fff;
+  border-right: 1px solid #e5e7eb;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.calendar-day-empty {
+  background: #f9fafb;
+}
+
+.calendar-day-number {
+  margin-bottom: 0.45rem;
+  color: #374151;
+  font-weight: 700;
+}
+
+.calendar-event {
+  display: block;
+  overflow-wrap: anywhere;
+  margin: 0.25rem 0;
+  padding: 0.4rem 0.5rem;
+  color: #664d03;
+  background: #fff3cd;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  text-decoration: none;
+}
+
+.calendar-event:hover {
+  color: #3d2e00;
+  background: #ffe69c;
+}
+
+.calendar-event strong,
+.calendar-event small {
+  display: block;
+}
+
+.calendar-event small {
+  margin-top: 0.15rem;
+  opacity: 0.8;
+}
+
+@media (max-width: 768px) {
+  .calendar-grid {
+    overflow-x: auto;
+    grid-template-columns: repeat(7, minmax(90px, 1fr));
+  }
+
+  .calendar-day {
+    min-height: 100px;
+  }
+
+  .calendar-heading {
+    font-size: 0.72rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .page-wrapper {
+    padding: 5.5rem 1rem 2rem;
+  }
+
+  .main-container {
+    padding: 1.4rem;
+  }
+
+  .event-header {
+    display: block;
+  }
+
+  .event-badges {
+    margin-top: 0.65rem;
+  }
+}

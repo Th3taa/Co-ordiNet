@@ -1,4 +1,5 @@
-﻿import datetime
+import datetime
+import calendar as month_calendar
 import json
 import os
 from contextlib import contextmanager
@@ -124,11 +125,13 @@ def can_manage_event(user: dict, event: dict) -> bool:
 def event_eligibility(event: dict, student: dict) -> str | None:
     grades = [int(value) for value in parse_json(event["grades_eligible"])]
     ages = [int(value) for value in parse_json(event["ages_eligible"])]
-    if student["grade"] not in grades:
+    eligibility_type = event.get("eligibility_type", "grade")
+    if eligibility_type == "grade" and student["grade"] not in grades:
         return "Your grade is not eligible for this event."
-    age = age_from_dob(student["birthdate"], event["event_date"])
-    if ages and age not in ages:
-        return "Your age on the event date is not eligible for this event."
+    if eligibility_type == "age":
+        age = age_from_dob(student["birthdate"], event["event_date"])
+        if age not in ages:
+            return "Your age on the event date is not eligible for this event."
     if event["gender"] != "A" and event["gender"] != ("B" if student["gender"] == "M" else "G"):
         return "Your gender is not eligible for this event."
     return None
@@ -147,9 +150,10 @@ def form_event() -> tuple[dict | None, str | None]:
     main_event = request.form.get("main_event", "").strip() or None
     summary = request.form.get("event_summary", "").strip()
     gender = request.form.get("gender", "")
+    eligibility_type = request.form.get("eligibility_type", "")
     try:
-        grades = sorted({int(value) for value in request.form.getlist("grades")})
-        ages = sorted({int(value) for value in request.form.getlist("ages")})
+        grades = sorted({int(value) for value in request.form.getlist("grades")}) if eligibility_type == "grade" else []
+        ages = sorted({int(value) for value in request.form.getlist("ages")}) if eligibility_type == "age" else []
         deadline = datetime.date.fromisoformat(request.form["last_nomination_date"])
         event_date = datetime.date.fromisoformat(request.form["event_date"])
         club_id = int(request.form.get("club_id", "0")) if event_type == "interhouse" else None
@@ -158,8 +162,12 @@ def form_event() -> tuple[dict | None, str | None]:
         return None, "Please provide valid dates, grades, ages, and council-member IDs."
     if event_type not in {"interhouse", "interschool"} or gender not in {"A", "B", "G"}:
         return None, "Choose a valid event type and gender eligibility."
-    if not event_name or not summary or not grades or not ages:
-        return None, "Event name, summary, at least one grade, and at least one age are required."
+    if eligibility_type not in {"grade", "age"}:
+        return None, "Choose whether eligibility is based on grade or age."
+    if any(value < 1 or value > 12 for value in grades) or any(value < 5 or value > 19 for value in ages):
+        return None, "Choose grades from 1 to 12 and ages from 5 to 19."
+    if not event_name or not summary or (eligibility_type == "grade" and not grades) or (eligibility_type == "age" and not ages):
+        return None, "Event name, summary, and at least one eligible value are required."
     if deadline <= datetime.date.today() or event_date <= deadline:
         return None, "The nomination deadline must be in the future and before the event date."
     if event_type == "interhouse" and (not club_id or not 1 <= club_id <= 99):
@@ -182,6 +190,7 @@ def form_event() -> tuple[dict | None, str | None]:
         "main_event": main_event,
         "event_summary": summary,
         "gender": gender,
+        "eligibility_type": eligibility_type,
         "grades": grades,
         "ages": ages,
         "last_nomination_date": deadline,
@@ -189,6 +198,39 @@ def form_event() -> tuple[dict | None, str | None]:
         "club_id": club_id,
         "associated_members": extra_members,
     }, None
+
+
+def eligible_student_ids(event_data: dict) -> set[int]:
+    students = fetch_all(
+        "SELECT students.student_id, students.grade, students.birthdate, students.gender FROM students JOIN users ON users.student_id = students.student_id"
+    )
+    eligible = set()
+    for student in students:
+        if event_data["eligibility_type"] == "grade" and student["grade"] not in event_data["grades"]:
+            continue
+        age = age_from_dob(student["birthdate"], event_data["event_date"])
+        if event_data["eligibility_type"] == "age" and age not in event_data["ages"]:
+            continue
+        if event_data["gender"] != "A" and event_data["gender"] != ("B" if student["gender"] == "M" else "G"):
+            continue
+        eligible.add(student["student_id"])
+    return eligible
+
+
+def create_event_notifications(cursor, event_id: str, event_data: dict) -> None:
+    recipient_ids = eligible_student_ids(event_data)
+    if event_data["event_type"] == "interhouse":
+        cursor.execute(
+            "SELECT students.student_id FROM students JOIN users ON users.student_id = students.student_id WHERE students.position = 'house_captain'"
+        )
+        recipient_ids.update(row["student_id"] for row in cursor.fetchall())
+    cursor.executemany(
+        "INSERT INTO notifications (event_id, recipient_id, notification_type, title, body) VALUES (%s, %s, 'event_created', %s, %s)",
+        [
+            (event_id, student_id, f"New event: {event_data['event_name']}", f"You may participate in this event. Event date: {event_data['event_date']:%d %b %Y}.")
+            for student_id in sorted(recipient_ids)
+        ],
+    )
 
 
 @app.context_processor
@@ -214,7 +256,7 @@ def home():
     counts = {
         "events": fetch_one("SELECT COUNT(*) AS count FROM events WHERE event_date >= CURDATE()")["count"],
         "participating": fetch_one("SELECT COUNT(*) AS count FROM participants WHERE student_id = %s", (user["student_id"],))["count"],
-        "notifications": fetch_one("SELECT COUNT(*) AS count FROM notifications WHERE recipient_id IS NULL OR recipient_id = %s", (user["student_id"],))["count"],
+        "notifications": fetch_one("SELECT COUNT(*) AS count FROM notifications WHERE recipient_id = %s", (user["student_id"],))["count"],
     }
     events = fetch_all("SELECT * FROM events WHERE event_date >= CURDATE() ORDER BY event_date LIMIT 5")
     return render_template("home.html", Counts=counts, counts=counts, Events=events, events=events)
@@ -345,7 +387,10 @@ def create_event():
         else:
             members = data["associated_members"] | set(automatic_member_ids(data["event_type"])) | {user["student_id"]}
             if data["event_type"] == "interhouse":
-                event_id = event_id_ih(data["club_id"], set(data["grades"]), data["gender"])
+                id_grades = set(data["grades"]) if data["eligibility_type"] == "grade" else set(range(1, 13))
+                event_id = event_id_ih(data["club_id"], id_grades, data["gender"])
+                if data["eligibility_type"] == "age":
+                    event_id += "$AGE" + "-".join(map(str, data["ages"]))
             else:
                 row = fetch_one("SELECT COALESCE(MAX(CAST(SUBSTRING(event_id, 3, 4) AS UNSIGNED)), 0) + 1 AS next_number FROM events WHERE event_type = 'interschool'")
                 event_id = event_id_is(row["next_number"], data["grades"], data["gender"], data["main_event"])
@@ -354,11 +399,12 @@ def create_event():
                 return render_template("event_form.html", Event=None, Council=council)
             with database() as (_, cursor):
                 cursor.execute(
-                    """INSERT INTO events (event_id, event_name, event_type, grades_eligible, ages_eligible, gender, main_event, last_nomination_date, event_date, created_by, event_summary, associated_members) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+                    """INSERT INTO events (event_id, event_name, event_type, eligibility_type, grades_eligible, ages_eligible, gender, main_event, last_nomination_date, event_date, created_by, event_summary, associated_members) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
                     (
                         event_id,
                         data["event_name"],
                         data["event_type"],
+                        data["eligibility_type"],
                         json.dumps(data["grades"]),
                         json.dumps(data["ages"]),
                         data["gender"],
@@ -370,6 +416,7 @@ def create_event():
                         json.dumps(sorted(members)),
                     ),
                 )
+                create_event_notifications(cursor, event_id, data)
             flash(f"Event {event_id} was created.", "success")
             return redirect(url_for("event_detail", event_id=event_id))
     return render_template("event_form.html", Event=None, Council=council)
@@ -393,9 +440,10 @@ def edit_event(event_id: str):
             members = data["associated_members"] | set(automatic_member_ids(event["event_type"])) | {event["created_by"]}
             with database() as (_, cursor):
                 cursor.execute(
-                    """UPDATE events SET event_name = %s, grades_eligible = %s, ages_eligible = %s, gender = %s, main_event = %s, last_nomination_date = %s, event_date = %s, event_summary = %s, associated_members = %s WHERE event_id = %s""",
+                    """UPDATE events SET event_name = %s, eligibility_type = %s, grades_eligible = %s, ages_eligible = %s, gender = %s, main_event = %s, last_nomination_date = %s, event_date = %s, event_summary = %s, associated_members = %s WHERE event_id = %s""",
                     (
                         data["event_name"],
+                        data["eligibility_type"],
                         json.dumps(data["grades"]),
                         json.dumps(data["ages"]),
                         data["gender"],
@@ -550,7 +598,7 @@ def notifications():
         (user["student_id"],),
     )
     items = fetch_all(
-        "SELECT notifications.*, events.event_name FROM notifications JOIN events ON events.event_id = notifications.event_id WHERE notifications.recipient_id IS NULL OR notifications.recipient_id = %s ORDER BY notifications.published_at DESC",
+        "SELECT notifications.*, events.event_name FROM notifications JOIN events ON events.event_id = notifications.event_id WHERE notifications.recipient_id = %s ORDER BY notifications.published_at DESC",
         (user["student_id"],),
     )
     return render_template("notifications.html", Items=items, Pending=pending)
@@ -567,9 +615,11 @@ def announcements(event_id: str):
         body = request.form.get("body", "").strip()
         if title and body:
             with database() as (_, cursor):
-                cursor.execute(
-                    "INSERT INTO notifications (event_id, authored_by, notification_type, title, body) VALUES (%s, %s, 'announcement', %s, %s)",
-                    (event_id, current_user()["student_id"], title, body),
+                cursor.execute("SELECT student_id FROM participants WHERE event_id = %s", (event_id,))
+                recipients = [row["student_id"] for row in cursor.fetchall()]
+                cursor.executemany(
+                    "INSERT INTO notifications (event_id, recipient_id, authored_by, notification_type, title, body) VALUES (%s, %s, %s, 'announcement', %s, %s)",
+                    [(event_id, student_id, current_user()["student_id"], title, body) for student_id in recipients],
                 )
             flash("Announcement published.", "success")
             return redirect(url_for("event_detail", event_id=event_id))
@@ -580,8 +630,32 @@ def announcements(event_id: str):
 @app.route("/calendar")
 @login_required
 def calendar():
-    events = fetch_all("SELECT event_id, event_name, event_date, last_nomination_date FROM events WHERE event_date >= CURDATE() ORDER BY event_date")
-    return render_template("calendar.html", Events=events)
+    today = datetime.date.today()
+    try:
+        year = int(request.args.get("year", today.year))
+        month = int(request.args.get("month", today.month))
+        first_day = datetime.date(year, month, 1)
+    except (TypeError, ValueError):
+        abort(400)
+    next_month = datetime.date(year + (month == 12), month % 12 + 1, 1)
+    previous_month = datetime.date(year - (month == 1), 12 if month == 1 else month - 1, 1)
+    events = fetch_all(
+        "SELECT event_id, event_name, event_date, last_nomination_date FROM events WHERE event_date >= %s AND event_date < %s ORDER BY event_date, event_name",
+        (first_day, next_month),
+    )
+    events_by_day = {}
+    for event in events:
+        events_by_day.setdefault(event["event_date"].day, []).append(event)
+    return render_template(
+        "calendar.html",
+        Year=year,
+        Month=month,
+        MonthName=first_day.strftime("%B %Y"),
+        Weeks=month_calendar.monthcalendar(year, month),
+        EventsByDay=events_by_day,
+        PreviousMonth=previous_month,
+        NextMonth=next_month,
+    )
 
 
 @app.route("/profile", methods=["GET", "POST"])

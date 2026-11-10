@@ -1,7 +1,7 @@
 import datetime
 
 
-def Event_ID_IH(clubno: int, grades: set[int], gender: str) -> str:
+def event_id_ih(clubno: int, grades: set[int], gender: str) -> str:
     """Create an interhouse ID using the agreed IH01$5-C$A convention."""
     if not grades:
         raise ValueError("At least one eligible grade is required.")
@@ -13,7 +13,7 @@ def Event_ID_IH(clubno: int, grades: set[int], gender: str) -> str:
     return f"IH{club_no_padded}${min_hex}-{max_hex}${gender[0].upper()}"
 
 
-def Event_ID_IS(n: int, grades: list[int], gender: str, main_event: str | None = None) -> str:
+def event_id_is(n: int, grades: list[int], gender: str, main_event: str | None = None) -> str:
     # Generate Event ID in format: IS{event_no}{gender}{grade_string}${main_event}
     # Eg. IS0002A$9ABCD$TEST for event number 2 grades 9,10,11,12 for all genders and main event 'TEST'
     event_no_padded = str(n).zfill(4)

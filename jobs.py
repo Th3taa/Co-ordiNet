@@ -1,7 +1,7 @@
 """Run once a day with a system scheduler after the Flask application is configured."""
 import datetime
 
-from app import database
+from app import database, event_eligibility
 
 
 def create_reminder(cursor, event_id: str, student_id: int, reminder_key: str, title: str, body: str) -> None:
@@ -35,12 +35,19 @@ def run_reminders() -> None:
                             f"Your event is on {event['event_date']:%d %b %Y}.",
                         )
                 if event["last_nomination_date"] == today + datetime.timedelta(days=days):
-                    cursor.execute("SELECT student_id FROM users")
-                    for row in cursor.fetchall():
+                    cursor.execute(
+                        "SELECT students.* FROM students JOIN users ON users.student_id = students.student_id"
+                    )
+                    eligible_ids = [
+                        row["student_id"]
+                        for row in cursor.fetchall()
+                        if event_eligibility(event, row) is None
+                    ]
+                    for student_id in eligible_ids:
                         create_reminder(
                             cursor,
                             event["event_id"],
-                            row["student_id"],
+                            student_id,
                             f"deadline-{event['event_id']}-{days}-{today.isoformat()}",
                             f"Nomination deadline {label}: {event['event_name']}",
                             f"Nominations close on {event['last_nomination_date']:%d %b %Y}.",

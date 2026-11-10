@@ -1,1 +1,18 @@
-{% extends 'base.html' %}{% block content %}<div class="page-wrapper"><div class="app-card lg"><div class="main-container"><h2>Calendar</h2>{% for Event in Events %}<div class="event-card"><div class="event-header"><h4>{{ Event.event_name }}</h4><span class="badge bg-secondary">{{ Event.event_date.strftime('%d %b %Y') }}</span></div><div class="event-dates"><span>Nomination deadline: {{ Event.last_nomination_date.strftime('%d %b %Y') }}</span></div><div class="event-actions"><a class="btn btn-outline-primary btn-sm" href="{{ url_for('EventDetail', EventId=Event.event_id) }}">View event</a></div></div>{% else %}<p class="text-muted">There are no upcoming dates.</p>{% endfor %}</div></div></div>{% endblock %}
+{% extends 'base.html' %}
+{% block title %}Calendar | Co-ordinet{% endblock %}
+{% block content %}
+<div class="page-wrapper"><div class="app-card lg"><div class="main-container">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <a class="btn btn-outline-secondary" href="{{ url_for('calendar', year=PreviousMonth.year, month=PreviousMonth.month) }}" aria-label="Previous month">&larr; Previous</a>
+    <h2 class="mb-0">{{ MonthName }}</h2>
+    <a class="btn btn-outline-secondary" href="{{ url_for('calendar', year=NextMonth.year, month=NextMonth.month) }}" aria-label="Next month">Next &rarr;</a>
+  </div>
+  <div class="calendar-grid" role="grid" aria-label="{{ MonthName }}">
+    {% for DayName in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] %}<div class="calendar-heading" role="columnheader">{{ DayName }}</div>{% endfor %}
+    {% for Week in Weeks %}{% for Day in Week %}
+      {% if Day %}<div class="calendar-day" role="gridcell"><div class="calendar-day-number">{{ Day }}</div>{% for Event in EventsByDay.get(Day, []) %}<a class="calendar-event" href="{{ url_for('event_detail', event_id=Event.event_id) }}"><strong>{{ Event.event_name }}</strong><small>Nomination by {{ Event.last_nomination_date.strftime('%d %b') }}</small></a>{% endfor %}</div>
+      {% else %}<div class="calendar-day calendar-day-empty" role="presentation"></div>{% endif %}
+    {% endfor %}{% endfor %}
+  </div>
+</div></div></div>
+{% endblock %}

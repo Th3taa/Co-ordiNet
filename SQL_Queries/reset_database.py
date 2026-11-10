@@ -40,6 +40,7 @@ def reset_database() -> None:
         cursor.execute(f"DROP DATABASE IF EXISTS `{database_name}`")
         run_sql_file(cursor, "01_create_database.sql", database_name)
         run_sql_file(cursor, "02_create_tables.sql", database_name)
+        run_sql_file(cursor, "04_event_eligibility_notifications.sql", database_name)
         run_sql_file(cursor, "03_seed_students.sql", database_name)
         connection.commit()
     except Exception:
